@@ -22,25 +22,39 @@
 <html>
     <head>
         <meta charset="utf-8" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="msapplication-tap-highlight" content="no" />
+      	<!-- Include Cordova/PhoneGap -->
+        <script type="text/javascript" charset="utf-8" src="cordova.js"></script>	
+        <!-- Include the jQuery library -->
+        <script src="jqm/jquery-1.11.3.js"></script>
+        <!-- Include the jQuery Mobile CSS -->
+        <link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+        <!-- Include the jQuery Mobile Library -->
+        <script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+        <!-- Include own JavaScript -->
+        <script type="text/javascript" src="js/index.js"></script>
         <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
         <link rel="stylesheet" type="text/css" href="css/index.css" />
+        <script type="text/javascript">app.initialize();</script>
+        <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMpIC4l_N01tRlTGJ5WKeQgU5VpfntZrQ&signed_in=false&libraries=visualization,places&callback=initMap">
+        </script>
         <title>Hello World</title>
     </head>
     <body>
-        <div class="app">
-            <h1>PhoneGap</h1>
-            <div id="deviceready" class="blink">
-                <p class="event listening">Connecting to Device</p>
-                <p class="event received">Device is Ready</p>
+        <div data-role="page" id="pageone" style="width:100%;height:100%;">
+            <div data-role="header" data-position="fixed">
+                <h1>EnvMap</h1>
             </div>
+            <div data-role="content" class="ui-content" style="padding:0" >
+                <!--<button class="ui-btn ui-shadow" id="button1" >Get Data</button>-->
+                <input id="fromInput" class="controls" type="text" placeholder="From:" data-clear-btn="true">
+                <input id="toInput" class="controls" type="text" placeholder="To:" data-clear-btn="true">
+                <div id="map" style="width:100%;height:100%;"></div>
+            </div>     
+            <!--<p id="text1">Waiting for Data Request...</p>    -->
+            <div data-role="footer" ></div>
         </div>
-        <script type="text/javascript" src="cordova.js"></script>
-        <script type="text/javascript" src="js/index.js"></script>
-        <script type="text/javascript">
-            app.initialize();
-        </script>
+        
     </body>
 </html>
