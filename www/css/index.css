@@ -123,3 +123,15 @@ h1 {
   text-overflow: ellipsis;
   width: 300px;
 }
+
+#dropDownContainer {
+    transition: all 0.1s;
+    top: -90px;
+    z-index: 1;
+    position: absolute;
+}
+	
+#dropDownContainer.tableVisible
+{
+	top: 0;
+}

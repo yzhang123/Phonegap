@@ -1,3 +1,11 @@
+window.onerror = function (errorMsg, url, lineNumber) {
+    window.alert("ERROR");
+    window.alert(errorMsg);
+    window.alert(url);
+    window.alert(lineNumber);
+    return false;
+};
+
 var URL = "http://portal.teco.edu/guerilla/guerillaSensingServer/index.php/tsdb_query_data/";
 var app = {
     // Application Constructor
@@ -98,7 +106,7 @@ function max_height() {
     c.height(c_new);
 }
 
-
+var markers = [];
 
 // This callback function gets called when Map is ready (see map request in index.html)
 function initMap() {
@@ -148,7 +156,7 @@ function initMap() {
     directionsDisplay.setMap(map);
     var searchField1 = $("#fromInput");
     var searchField2 = $("#toInput");
-    var markers = [];
+
     
     // var searchBox1 = new google.maps.places.SearchBox(searchField1[0]);
     // var searchBox2 = new google.maps.places.SearchBox(searchField2[0]);
@@ -212,6 +220,8 @@ function initMap() {
         _to = autocomplete2.getPlace();
         updateContent();
     });
+    
+    // not working yet
     searchField1.children(".ui-input-clear").click(function() {
         window.alert("works");
         _from = null;
@@ -235,20 +245,139 @@ function initMap() {
             marker.setMap(null);
         });
         markers = [];
-        directionsService.route({
+        var directionRequest = {
             origin: {'placeId': _from.place_id},
-                    destination: {'placeId': _to.place_id},
-                    travelMode: travel_mode
-                    }, 
-            function(response, status) {
-                if (status === google.maps.DirectionsStatus.OK) {
-                    directionsDisplay.setDirections(response);
-                } else {
-                    window.alert('Directions request failed due to ' + status);
-                }
-            });
+            destination: {'placeId': _to.place_id},
+            provideRouteAlternatives: true,
+            travelMode: travel_mode
+        }
+        directionsService.route(directionRequest, 
+                                function(response, status) {
+                                    if (status === google.maps.DirectionsStatus.OK) {
+                                        chooseBestRoute(response, map);
+                                        for (var i = 0, len = response.routes.length; i < len; i++) {
+                                            new google.maps.DirectionsRenderer({
+                                                map: map,
+                                                directions: response,
+                                                routeIndex: i
+                                            });
+                                        }
+                                        //directionsDisplay.setDirections(response);
+                                    } else {
+                                        window.alert('Directions request failed due to ' + status);
+                                    }
+                                });
     }
     
- 
+    
+    // // takes a directionsResult object as argument
+    function chooseBestRoute(directionResult, map) {
+        // number of alternative routes
+        var n_routes = 1;//directionResult.routes.length;
+        for (var route = 0; route < n_routes; route++) {
+            var currentRoute = directionResult.routes[route].legs[0];
+            // for (var step = 0; step < currentRoute.steps.length; step++) {
+            //     markers.push(new google.maps.Marker({
+            //             map : map,
+            //             position :  currentRoute.steps[step].start_location
+            //     }));
+            // }
+            var n = 1/10;
+            for (var i = 0; i <= 1; i+=n) {
+                markers.push(new google.maps.Marker({
+                        map: map,
+                        position: LatLong(currentRoute, i)
+                }));
+            }
+        }
         
+    
+    }
+    
+    // Directionsleg object = route, interpol [0,1]
+    function LatLong(route, interpol) {
+        var totalDistance = route.distance.value;
+        if (interpol < 0 || interpol > 1) return;
+        if (totalDistance) {
+            // distance from starting point of route to search point indicated by interpol
+            var startToSearchDistance = totalDistance * interpol;
+            var startPoint = route.start_location;       
+            for (var s = 0, currentDistance = 0; s < route.steps.length; s++) {
+                var step = route.steps[s];
+                if (currentDistance + step.distance.value > startToSearchDistance) {
+                    // search point on this step line
+                    for (var p = 0; p < step.path.length - 1; p++)
+                    {
+                        var pathPointA = step.path[p];// LatLng object
+                        var pathPointB = step.path[p + 1];// LatLng object
+                        var distance = getDistanceFromLatLon(
+                            pathPointA.lat(), pathPointA.lng(), 
+                            pathPointB.lat(), pathPointB.lng());
+                        
+                        if (distance + currentDistance > startToSearchDistance)
+                        {
+                            // search point found on this path
+                            var restDistanceFactor = (startToSearchDistance - currentDistance) / distance;
+                            var result = new google.maps.LatLng(
+                                pathPointA.lat() + restDistanceFactor * (pathPointB.lat() - pathPointA.lat()),
+                                pathPointA.lng() + restDistanceFactor * (pathPointB.lng() - pathPointA.lng()));
+                            
+                            return result;
+                        }
+                        else
+                        {
+                            currentDistance += distance;
+                        }
+                            
+                    }
+                    return step.end_location;
+                }
+                else 
+                {
+                   currentDistance += step.distance.value;
+                }
+            }
+        }
+    }
+}
+// end of async initMap
+
+
+function getDistanceFromLatLon(lat1,lon1,lat2,lon2) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(lat2-lat1);  // deg2rad below
+  var dLon = deg2rad(lon2-lon1); 
+  var a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  var d = R * c; // Distance in km
+  return d * 1000;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI/180)
+}
+
+// called when drop down button is clicked - opens text fields for routing
+function dropDownTable() {
+    var arrow = $("#dropDownTable"); 
+    var dropDownContainer = $("#dropDownContainer");
+    if (arrow.hasClass("ui-icon-carat-d"))
+    {
+        arrow.removeClass("ui-icon-carat-d");    
+        arrow.addClass("ui-icon-carat-u");
+        // show table
+        dropDownContainer.addClass("tableVisible");
+    }
+    else 
+    {
+        arrow.removeClass("ui-icon-carat-u");    
+        arrow.addClass("ui-icon-carat-d");
+        // delete table
+        dropDownContainer.removeClass("tableVisible");
+    }
+    
 }

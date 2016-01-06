@@ -44,12 +44,24 @@
     <body>
         <div data-role="page" id="pageone" style="width:100%;height:100%;">
             <div data-role="header" data-position="fixed">
-                <h1>EnvMap</h1>
+                <!--<h1>EnvMap</h1>-->
+                <div style="float:right" class="ui-nodisc-icon ui-alt-icon" >
+                    <!--<a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
+                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
+                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
+                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>-->
+                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
+                
+                
+                
+                </div>
             </div>
-            <div data-role="content" class="ui-content" style="padding:0" >
+            <div data-role="content" class="ui-content" style="padding:0; position:relative" >
                 <!--<button class="ui-btn ui-shadow" id="button1" >Get Data</button>-->
-                <input id="fromInput" class="controls" type="text" placeholder="From:" data-clear-btn="true">
-                <input id="toInput" class="controls" type="text" placeholder="To:" data-clear-btn="true">
+                <div id="dropDownContainer">
+                    <input id="fromInput" class="controls" type="text" placeholder="From:" data-clear-btn="true">
+                    <input id="toInput" class="controls" type="text" placeholder="To:" data-clear-btn="true">
+                </div>
                 <div id="map" style="width:100%;height:100%;"></div>
             </div>     
             <!--<p id="text1">Waiting for Data Request...</p>    -->
