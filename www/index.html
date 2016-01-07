@@ -43,17 +43,41 @@
     </head>
     <body>
         <div data-role="page" id="pageone" style="width:100%;height:100%;">
+           <div data-role="panel" class="slide-in" id="left-panel" data-theme="b" data-display="overlay">
+                <fieldset data-role="controlgroup">
+                    <input type="radio" name="env" id="radio-choice-1" value="co" checked="checked" />
+                    <label for="radio-choice-1">CO</label>
+                    
+                    <input type="radio" name="env" id="radio-choice-2" value="co2"  />
+                    <label for="radio-choice-2">CO2</label>
+                    
+                    <input type="radio" name="env" id="radio-choice-3" value="dust"  />
+                    <label for="radio-choice-3">DUST</label>
+                    
+                    <input type="radio" name="env" id="radio-choice-4" value="hum"  />
+                    <label for="radio-choice-4">HUM</label>
+                    
+                    <input type="radio" name="env" id="radio-choice-5" value="no2"  />
+                    <label for="radio-choice-5">NO2</label>
+                    
+                    <input type="radio" name="env" id="radio-choice-6" value="o3"  />
+                    <label for="radio-choice-6">O3</label>   
+                                     
+                    <input type="radio" name="env" id="radio-choice-7" value="temp"  />
+                    <label for="radio-choice-7">TEMP</label>
+                                             
+                    <input type="radio" name="env" id="radio-choice-8" value="uv"  />
+                    <label for="radio-choice-8">UV</label>
+                    
+                </fieldset>
+            </div><!-- /panel -->    
             <div data-role="header" data-position="fixed">
-                <!--<h1>EnvMap</h1>-->
+                <!--<h1>EnvMap</h1>-->     
+                <div style="float:left" class="ui-nodisc-icon ui-alt-icon" >
+                    <a href="#left-panel" class="ui-btn ui-shadow ui-corner-all ui-icon-bullets ui-btn-icon-notext" id="openRightPanel" style="margin:10px"></a>
+                </div>
                 <div style="float:right" class="ui-nodisc-icon ui-alt-icon" >
-                    <!--<a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
                     <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
-                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
-                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>-->
-                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
-                
-                
-                
                 </div>
             </div>
             <div data-role="content" class="ui-content" style="padding:0; position:relative" >
@@ -63,9 +87,9 @@
                     <input id="toInput" class="controls" type="text" placeholder="To:" data-clear-btn="true">
                 </div>
                 <div id="map" style="width:100%;height:100%;"></div>
-            </div>     
-            <!--<p id="text1">Waiting for Data Request...</p>    -->
-            <div data-role="footer" ></div>
+            </div>
+             
+            <div data-role="footer" id="footer" ></div>
         </div>
         
     </body>

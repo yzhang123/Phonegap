@@ -44,16 +44,6 @@ function main()
     max_height();
 }
 
-function onclick(callback)
-{
-    $.getJSON(URL, function(result, status) {
-        if (status == "success")
-        {
-            callback(parseJSONData(result));
-        }
-    });
-    
-}
 
 // if using this function specify callback function 
 // that takes the array of parsed objects as parameter
@@ -108,9 +98,8 @@ function max_height() {
 
 var map;
 var markers = [];
-var env_mode = "dust";
+var env_mode = "co";
 var dataready = false;
-var data = [];
 var objectsarray = [];
 var heatmap = null;
 var travel_mode = null;
@@ -118,13 +107,14 @@ var _from = null;
 var _to = null;
 var directionsService = null;
 var directionsDisplay = null;
+var heatmaps = {};
+var features = [];
 // when data base successfully retrieved
 function ondataready(objects) 
 {
     dataready = true;
-
+    features = ['co', 'co2', 'dust', 'hum', 'no2', 'o3', 'temp', 'uv'];
     for( var o of objects) {
-        data.push({location: new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon)), weight: parseFloat(o[env_mode] )});
         objectsarray.push({location: new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon)),
                            co : parseFloat(o.co),
                            co2 : parseFloat(o.co2),
@@ -137,13 +127,46 @@ function ondataready(objects)
         });          
     }
     
-    heatmap = new google.maps.visualization.HeatmapLayer({
-            data : data,
-            map : map,
+
+
+
+    for (var i = 0; i < features.length; ++i)
+    {    
+        var temp = [];
+        for( var o of objectsarray) {
+            temp.push({location: o.location, weight :o[features[i]] });
+        }
+        heatmaps[features[i]] = new google.maps.visualization.HeatmapLayer({
+            data : temp,
+            map : null,
             radius: 100, opacity : 1
+        });
+    }
+   
+    $("input[name='env']").change(function() {
+        if ($(this).is(':checked'))
+        {
+            var old_mode = env_mode;
+            env_mode = $(this).val();
+            refreshMap(old_mode);
+        }
     });
+    
+    refreshMap(env_mode);
 }
 
+function refreshMap(old_mode)
+{
+    if (!dataready)
+    {
+        window.alert("cannot refresh map because data not ready");
+    }
+    
+    heatmaps[old_mode].setMap(null);
+    heatmaps[env_mode].setMap(map);
+    
+    route(_from, _to, travel_mode, directionsService, directionsDisplay);
+}
 
 function expandViewportToFitPlace(map, place) {
     markers.forEach(function(marker) {
@@ -187,6 +210,7 @@ function updateContent() {
     route(_from, _to, travel_mode, directionsService, directionsDisplay);
 }
 
+var directionRenderers = [];
 function route(_from, _to, travel_mode,
                 directionsService, directionsDisplay) {
     var fromValid = _from && _from.place_id;
@@ -195,10 +219,16 @@ function route(_from, _to, travel_mode,
         directionsDisplay.setDirections(null);
         return;
     }
+    // clear markers
     markers.forEach(function(marker) {
         marker.setMap(null);
     });
     markers = [];
+    // clear route
+    directionsDisplay.setMap(null);
+    directionRenderers.forEach(function(renderer) {
+        renderer.setMap(null);
+    })
     var directionRequest = {
         origin: {'placeId': _from.place_id},
         destination: {'placeId': _to.place_id},
@@ -210,13 +240,13 @@ function route(_from, _to, travel_mode,
                                 if (status === google.maps.DirectionsStatus.OK) {
                                     chooseBestRoute(response, map);
                                     for (var i = 0, len = response.routes.length; i < len; i++) {
-                                        new google.maps.DirectionsRenderer({
+                                        directionRenderers.push(new google.maps.DirectionsRenderer({
                                             map: map,
                                             directions: response,
                                             routeIndex: i
-                                        });
+                                        }));
                                     }
-                                    //directionsDisplay.setDirections(response);
+                                    directionsDisplay.setDirections(response);
                                 } else {
                                     window.alert('Directions request failed due to ' + status);
                                 }
@@ -231,24 +261,16 @@ function chooseBestRoute(directionResult, map) {
     var n_routes = directionResult.routes.length;
     var bestRouteIndex;
     var bestEnvScore;
+    var scores = [];
     for (var route = 0; route < n_routes; route++) {
         var currentRoute = directionResult.routes[route].legs[0];
-        var score = integrate(currentRoute, weightedsquareEvaluation, env_mode);
-        if (route == 0)
+        var score = integrate(currentRoute, nearestSensor, env_mode);
+        scores.push(score);
+        if (route == 0 || score < bestEnvScore)
         {
             bestRouteIndex = route;
             bestEnvScore = score;
         }
-        else 
-        {
-            if (score < bestEnvScore)
-            {
-                bestEnvScore = score;
-                bestRouteIndex = route;
-            }
-        }
-        
-        
     }
     var n = 1/10;
     for (var i = 0; i <= 1; i+=n) {
@@ -257,6 +279,8 @@ function chooseBestRoute(directionResult, map) {
                 position: LatLong(directionResult.routes[bestRouteIndex].legs[0], i)
         }));
     }
+    
+    $("#footer").text(scores.join(", "));
     return bestRouteIndex;
     
 
@@ -299,6 +323,26 @@ function weightedsquareEvaluation(objects, envmode, position)
     }
     
     return sumInfluence;
+}
+
+function nearestSensor(objects, envmode, position)
+{
+    if (objects.length == 0) {
+        window.alert("no data points in data base");
+    }
+    var nearestSensor = objects[0];
+    var minDist = getDistanceFromLatLon(nearestSensor.location, position);
+    for (var obj of objects)
+    {
+        var dist = getDistanceFromLatLon(obj.location, position);
+        if (dist < minDist)
+        {
+            minDist = dist;
+            nearestSensor = obj;
+        }
+    }
+    
+    return nearestSensor[envmode];
 }
 
 // This callback function gets called when Map is ready (see map request in index.html)
