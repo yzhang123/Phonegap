@@ -229,39 +229,84 @@ function route(_from, _to, travel_mode,
     directionRenderers.forEach(function(renderer) {
         renderer.setMap(null);
     })
+    
+    // new start and end markers
+    markers.push(new google.maps.Marker({
+        position: _from.geometry.location, 
+        map: map,
+        label: "A",
+        title: _from.name
+    }));
+    markers.push(new google.maps.Marker({
+        position: _to.geometry.location, 
+        map: map,
+        label: "B",
+        title: _to.name
+    }));
     var directionRequest = {
         origin: {'placeId': _from.place_id},
         destination: {'placeId': _to.place_id},
         provideRouteAlternatives: true,
         travelMode: travel_mode
     }
-    directionsService.route(directionRequest, 
-                            function(response, status) {
-                                if (status === google.maps.DirectionsStatus.OK) {
-                                    chooseBestRoute(response, map);
-                                    for (var i = 0, len = response.routes.length; i < len; i++) {
-                                        directionRenderers.push(new google.maps.DirectionsRenderer({
-                                            map: map,
-                                            directions: response,
-                                            routeIndex: i
-                                        }));
-                                    }
-                                    directionsDisplay.setDirections(response);
-                                } else {
-                                    window.alert('Directions request failed due to ' + status);
-                                }
-                            });
+    directionsService.route(
+        directionRequest, 
+        function(response, status) {
+            if (status === google.maps.DirectionsStatus.OK) {
+                //directionsDisplay.setDirections(response);
+                var scores = [];
+                var bestRouteIndex = chooseBestRoute(response, map, scores);
+                for (var i = 0, len = response.routes.length; i < len; i++) {
+                    // directionRenderers.push(new google.maps.DirectionsRenderer({
+                    //     map: map,
+                    //     directions: response,
+                    //     routeIndex: i,
+                    //     polylineOptions: 
+                    //     {
+                    //         strokeColor: i == bestRouteIndex ? "#FF0000" : "#0088FF",
+                    //         strokeWeight: 6,
+                    //         strokeOpacity: 0.6
+                    //      }
+                    // }));
+                    var polyline = new google.maps.Polyline({
+                        path: [],
+                        strokeColor: i == bestRouteIndex ? "#FF0000" : "#0088FF",
+                        strokeWeight: 6,
+                        strokeOpacity: 0.6
+                    });
+                    var bounds = new google.maps.LatLngBounds();
+                    var legs = response.routes[i].legs;
+                    for (var leg of legs) {
+                        for (var step of leg.steps) {
+                            for (var nextSegment of step.path) {
+                                polyline.getPath().push(nextSegment);
+                                bounds.extend(nextSegment);
+                            }
+                        }
+                    }
+                    polyline.setMap(map);
+                    map.fitBounds(bounds);
+                    var clickHandler = (function (x) { return function() { onPolylineClick(x, scores); } })(i);
+                    google.maps.event.addListener(polyline, "click", clickHandler);
+                } 
+            } else {
+                window.alert('Directions request failed due to ' + status);
+            }
+        });
 }
 
+// i-th polyline/ route is clicked, display its score extracted from scores
+function onPolylineClick(i, scores)
+{
+    $("#footer").text(env_mode + ": " + scores[i]);
+}
     
-
 // // takes a directionsResult object as argument
-function chooseBestRoute(directionResult, map) {
+function chooseBestRoute(directionResult, map, scores) {
     // number of alternative routes
     var n_routes = directionResult.routes.length;
     var bestRouteIndex;
     var bestEnvScore;
-    var scores = [];
     for (var route = 0; route < n_routes; route++) {
         var currentRoute = directionResult.routes[route].legs[0];
         var score = integrate(currentRoute, nearestSensor, env_mode);
@@ -272,18 +317,16 @@ function chooseBestRoute(directionResult, map) {
             bestEnvScore = score;
         }
     }
-    var n = 1/10;
-    for (var i = 0; i <= 1; i+=n) {
-        markers.push(new google.maps.Marker({
-                map: map,
-                position: LatLong(directionResult.routes[bestRouteIndex].legs[0], i)
-        }));
-    }
+    //var n = 1/10;
+    // for (var i = 0; i <= 1; i+=n) {
+    //     markers.push(new google.maps.Marker({
+    //             map: map,
+    //             position: LatLong(directionResult.routes[bestRouteIndex].legs[0], i)
+    //     }));
+    // }
     
-    $("#footer").text(scores.join(", "));
+    onPolylineClick(bestRouteIndex, scores);
     return bestRouteIndex;
-    
-
 }
 
 function integrate(route, func, envmode)
