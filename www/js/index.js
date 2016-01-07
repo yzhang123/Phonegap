@@ -44,15 +44,39 @@ function main()
     max_height();
 }
 
-
+var map;
+var markers = [];
+var env_mode = "co";
+var dataready = false;
+var objectsarray = [];
+var travel_mode = null;
+var _from = null;
+var _to = null;
+var directionsService = null;
+var directionsDisplay = null;
+var heatmaps = {};
+var features = [];
+var polylines = [];
 // if using this function specify callback function 
 // that takes the array of parsed objects as parameter
-function getData(callback)
+function getData()
 {
     $.getJSON(URL, function(result, status) {
         if (status == "success")
         {
-            callback(parseJSONData(result));
+            var objects = parseJSONData(result);
+            features = ['co', 'co2', 'dust', 'hum', 'no2', 'o3', 'temp', 'uv'];
+            for( var o of objects) {
+                var obj = {};
+                obj.location = new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon));
+                for (var i of features)
+                {
+                   obj.i = parseFloat(o.i); 
+                }
+                objectsarray.push(obj);
+
+            }
+            ondataready();
         }
     });
     
@@ -96,40 +120,12 @@ function max_height() {
     c.height(c_new);
 }
 
-var map;
-var markers = [];
-var env_mode = "co";
-var dataready = false;
-var objectsarray = [];
-var heatmap = null;
-var travel_mode = null;
-var _from = null;
-var _to = null;
-var directionsService = null;
-var directionsDisplay = null;
-var heatmaps = {};
-var features = [];
+
 // when data base successfully retrieved
-function ondataready(objects) 
+function ondataready() 
 {
     dataready = true;
-    features = ['co', 'co2', 'dust', 'hum', 'no2', 'o3', 'temp', 'uv'];
-    for( var o of objects) {
-        objectsarray.push({location: new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon)),
-                           co : parseFloat(o.co),
-                           co2 : parseFloat(o.co2),
-                           dust : parseFloat(o.dust),
-                           hum : parseFloat(o.hum),
-                           no2 : parseFloat(o.no2),
-                           o3 : parseFloat(o.o3),
-                           temp : parseFloat(o.temp),
-                           uv : parseFloat(o.uv),
-        });          
-    }
-    
-
-
-
+ 
     for (var i = 0; i < features.length; ++i)
     {    
         var temp = [];
@@ -210,7 +206,6 @@ function updateContent() {
     route(_from, _to, travel_mode, directionsService, directionsDisplay);
 }
 
-var directionRenderers = [];
 function route(_from, _to, travel_mode,
                 directionsService, directionsDisplay) {
     var fromValid = _from && _from.place_id;
@@ -224,12 +219,10 @@ function route(_from, _to, travel_mode,
         marker.setMap(null);
     });
     markers = [];
-    // clear route
-    directionsDisplay.setMap(null);
-    directionRenderers.forEach(function(renderer) {
-        renderer.setMap(null);
-    })
-    
+    // clear polylines/routes
+    polylines.forEach(function(polyline) {
+       polyline.setMap(null); 
+    });
     // new start and end markers
     markers.push(new google.maps.Marker({
         position: _from.geometry.location, 
@@ -274,6 +267,7 @@ function route(_from, _to, travel_mode,
                         strokeWeight: 6,
                         strokeOpacity: 0.6
                     });
+                    polylines.push(polyline);
                     var bounds = new google.maps.LatLngBounds();
                     var legs = response.routes[i].legs;
                     for (var leg of legs) {
@@ -413,9 +407,7 @@ function initMap() {
     //    }
     
     // function call getData, async code
-    getData(function(objects){
-        ondataready(objects);
-    });
+    getData();
     
     directionsService = new google.maps.DirectionsService;
     directionsDisplay = new google.maps.DirectionsRenderer;
