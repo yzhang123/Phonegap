@@ -111,6 +111,7 @@ var markers = [];
 var env_mode = "dust";
 var dataready = false;
 var data = [];
+var objectsarray = [];
 var heatmap = null;
 var travel_mode = null;
 var _from = null;
@@ -121,9 +122,21 @@ var directionsDisplay = null;
 function ondataready(objects) 
 {
     dataready = true;
+
     for( var o of objects) {
         data.push({location: new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon)), weight: parseFloat(o[env_mode] )});
+        objectsarray.push({location: new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon)),
+                           co : parseFloat(o.co),
+                           co2 : parseFloat(o.co2),
+                           dust : parseFloat(o.dust),
+                           hum : parseFloat(o.hum),
+                           no2 : parseFloat(o.no2),
+                           o3 : parseFloat(o.o3),
+                           temp : parseFloat(o.temp),
+                           uv : parseFloat(o.uv),
+        });          
     }
+    
     heatmap = new google.maps.visualization.HeatmapLayer({
             data : data,
             map : map,
@@ -215,72 +228,79 @@ function route(_from, _to, travel_mode,
 // // takes a directionsResult object as argument
 function chooseBestRoute(directionResult, map) {
     // number of alternative routes
-    var n_routes = 1;//directionResult.routes.length;
+    var n_routes = directionResult.routes.length;
+    var bestRouteIndex;
+    var bestEnvScore;
     for (var route = 0; route < n_routes; route++) {
         var currentRoute = directionResult.routes[route].legs[0];
-        // for (var step = 0; step < currentRoute.steps.length; step++) {
-        //     markers.push(new google.maps.Marker({
-        //             map : map,
-        //             position :  currentRoute.steps[step].start_location
-        //     }));
-        // }
-        var n = 1/10;
-        for (var i = 0; i <= 1; i+=n) {
-            markers.push(new google.maps.Marker({
-                    map: map,
-                    position: LatLong(currentRoute, i)
-            }));
+        var score = integrate(currentRoute, weightedsquareEvaluation, env_mode);
+        if (route == 0)
+        {
+            bestRouteIndex = route;
+            bestEnvScore = score;
         }
+        else 
+        {
+            if (score < bestEnvScore)
+            {
+                bestEnvScore = score;
+                bestRouteIndex = route;
+            }
+        }
+        
+        
     }
+    var n = 1/10;
+    for (var i = 0; i <= 1; i+=n) {
+        markers.push(new google.maps.Marker({
+                map: map,
+                position: LatLong(directionResult.routes[bestRouteIndex].legs[0], i)
+        }));
+    }
+    return bestRouteIndex;
     
 
 }
 
-// Directionsleg object = route, interpol [0,1]
-function LatLong(route, interpol) {
-    var totalDistance = route.distance.value;
-    if (interpol < 0 || interpol > 1) return;
-    if (totalDistance) {
-        // distance from starting point of route to search point indicated by interpol
-        var startToSearchDistance = totalDistance * interpol;
-        var startPoint = route.start_location;       
-        for (var s = 0, currentDistance = 0; s < route.steps.length; s++) {
-            var step = route.steps[s];
-            if (currentDistance + step.distance.value > startToSearchDistance) {
-                // search point on this step line
-                for (var p = 0; p < step.path.length - 1; p++)
-                {
-                    var pathPointA = step.path[p];// LatLng object
-                    var pathPointB = step.path[p + 1];// LatLng object
-                    var distance = getDistanceFromLatLon(
-                        pathPointA.lat(), pathPointA.lng(), 
-                        pathPointB.lat(), pathPointB.lng());
-                    
-                    if (distance + currentDistance > startToSearchDistance)
-                    {
-                        // search point found on this path
-                        var restDistanceFactor = (startToSearchDistance - currentDistance) / distance;
-                        var result = new google.maps.LatLng(
-                            pathPointA.lat() + restDistanceFactor * (pathPointB.lat() - pathPointA.lat()),
-                            pathPointA.lng() + restDistanceFactor * (pathPointB.lng() - pathPointA.lng()));
-                        
-                        return result;
-                    }
-                    else
-                    {
-                        currentDistance += distance;
-                    }
-                        
-                }
-                return step.end_location;
-            }
-            else 
-            {
-                currentDistance += step.distance.value;
-            }
+function integrate(route, func, envmode)
+{
+    var points = [];
+    var resolution = 10;
+    var N = 1 / resolution;
+    var sumInfluence = 0;
+    for (var i = 0; i <= 1; i += N) {
+        var point = LatLong(route, i);
+        points.push(point);
+        if (!point)
+        {
+            window.alert("point undefined "+ i );
+        }
+        sumInfluence += func(objectsarray, envmode, point);
+    }
+    return sumInfluence;
+}
+
+// evaluate environment influence at position  according to envmode feature, e.g. "o2"
+function weightedsquareEvaluation(objects, envmode, position)
+{
+    if (objects.length == 0) {
+        window.alert("no data points in data base");
+    }
+    var minInfluenceDist = 1000;
+    var sumInfluence = 0;
+    for (var obj of objects)
+    {
+
+        var dist = getDistanceFromLatLon(obj.location, position);
+        if (dist < minInfluenceDist)
+        {
+            sumInfluence += obj[envmode]/(dist * dist);
         }
     }
+    
+    return sumInfluence;
 }
+
 // This callback function gets called when Map is ready (see map request in index.html)
 function initMap() {
     travel_mode = google.maps.TravelMode.WALKING;
@@ -305,10 +325,9 @@ function initMap() {
     //         });
     //    }
     
-    // function call getData
+    // function call getData, async code
     getData(function(objects){
         ondataready(objects);
-        
     });
     
     directionsService = new google.maps.DirectionsService;
@@ -320,11 +339,6 @@ function initMap() {
     autocomplete1.bindTo('bounds', map);
     var autocomplete2 = new google.maps.places.Autocomplete(searchField2[0]);
     autocomplete2.bindTo('bounds', map);
-    
-    
-    
-
- 
     // if from input text field adress is changed
     autocomplete1.addListener('place_changed', function() {
         _from = autocomplete1.getPlace();
@@ -346,15 +360,62 @@ function initMap() {
         _to = null;
         updateContent();
     });
-    
-    
-
-
 }
 // end of async initMap
 
 
-function getDistanceFromLatLon(lat1,lon1,lat2,lon2) {
+// Directionsleg object = route, interpol [0,1]
+function LatLong(route, interpol) {
+    var totalDistance = route.distance.value;
+    if (interpol < 0 || interpol > 1) return;
+    if (totalDistance) {
+        // distance from starting point of route to search point indicated by interpol
+        var startToSearchDistance = totalDistance * interpol;      
+        for (var s = 0, currentDistance = 0; s < route.steps.length; s++) {
+            var step = route.steps[s];
+            if (currentDistance + step.distance.value > startToSearchDistance) {
+                // search point on this step line
+                for (var p = 0; p < step.path.length - 1; p++)
+                {
+                    var pathPointA = step.path[p];// LatLng object
+                    var pathPointB = step.path[p + 1];// LatLng object
+                    var distance = getDistanceFromLatLon(pathPointA, pathPointB);
+                    
+                    if (distance + currentDistance > startToSearchDistance)
+                    {
+                        // search point found on this path
+                        var restDistanceFactor = (startToSearchDistance - currentDistance) / distance;
+                        var result = new google.maps.LatLng(
+                            pathPointA.lat() + restDistanceFactor * (pathPointB.lat() - pathPointA.lat()),
+                            pathPointA.lng() + restDistanceFactor * (pathPointB.lng() - pathPointA.lng()));
+                        //window.alert(JSON.stringify(result) + " dist = " + distance + " p=" + p);
+                        return result;
+                    }
+                    else
+                    {
+                        currentDistance += distance;
+                    }
+                        
+                }
+                return step.end_location;
+            }
+            else 
+            {
+                currentDistance += step.distance.value;
+            }
+        }
+    }
+}
+
+function getDistanceFromLatLon(point1, point2) {
+  if (!point1 || !point2)
+  {
+      window.alert("getDistanceFromLatLon got undefined points");
+  }
+  var lat1 = point1.lat();
+  var lon1 = point1.lng();
+  var lat2 = point2.lat();
+  var lon2 = point2.lng();
   var R = 6371; // Radius of the earth in km
   var dLat = deg2rad(lat2-lat1);  // deg2rad below
   var dLon = deg2rad(lon2-lon1); 
