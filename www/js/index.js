@@ -1,3 +1,4 @@
+/* global x */
 window.onerror = function (errorMsg, url, lineNumber) {
     window.alert("ERROR");
     window.alert(errorMsg);
@@ -6,7 +7,7 @@ window.onerror = function (errorMsg, url, lineNumber) {
     return false;
 };
 
-var URL = "http://portal.teco.edu/guerilla/guerillaSensingServer/index.php/tsdb_query_data/";
+var URL = "data.json"; // TODO: change back to: "http://portal.teco.edu/guerilla/guerillaSensingServer/index.php/tsdb_query_data/";
 var app = {
     // Application Constructor
     initialize: function() {
@@ -33,18 +34,18 @@ var text1;
 
 function main() 
 {
-    
     //button1 = $("#button1");
     text1 = $("#text1");
     //button1.click(onclick);
     $(window).unbind();
     $(window).bind('pageshow resize orientationchange', function(e){
-        max_height();
+        adjustSize();
     });
-    max_height();
+    adjustSize();
 }
 
 var map;
+var markerClusterer;
 var markers = [];
 var env_mode = "co";
 var dataready = false;
@@ -54,7 +55,7 @@ var _from = null;
 var _to = null;
 var directionsService = null;
 var directionsDisplay = null;
-var heatmaps = {};
+var envmaps = {};
 var features = [];
 var polylines = [];
 // if using this function specify callback function 
@@ -71,7 +72,7 @@ function getData()
                 obj.location = new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon));
                 for (var i of features)
                 {
-                   obj.i = parseFloat(o.i); 
+                   obj[i] = parseFloat(o[i]); 
                 }
                 objectsarray.push(obj);
 
@@ -109,7 +110,8 @@ function parseJSONData(data)
     return objects;
 }
 
-function max_height() {
+// on window resize
+function adjustSize() {
     var h = $('div[data-role="header"]').outerHeight(true);
     var f = $('div[data-role="footer"]').outerHeight(true);
     var w = $(window).height();
@@ -118,8 +120,9 @@ function max_height() {
     var c_oh = c.outerHeight(true);
     var c_new = w - h - f - c_oh + c_h;
     c.height(c_new);
+    if (map)
+        google.maps.event.trigger(map, 'resize');
 }
-
 
 // when data base successfully retrieved
 function ondataready() 
@@ -130,15 +133,11 @@ function ondataready()
     {    
         var temp = [];
         for( var o of objectsarray) {
-            temp.push({location: o.location, weight :o[features[i]] });
+            temp.push({location: o.location, weight: o[features[i]] });
         }
-        heatmaps[features[i]] = new google.maps.visualization.HeatmapLayer({
-            data : temp,
-            map : null,
-            radius: 100, opacity : 1
-        });
+        envmaps[features[i]] = temp;
     }
-   
+    
     $("input[name='env']").change(function() {
         if ($(this).is(':checked'))
         {
@@ -158,8 +157,16 @@ function refreshMap(old_mode)
         window.alert("cannot refresh map because data not ready");
     }
     
-    heatmaps[old_mode].setMap(null);
-    heatmaps[env_mode].setMap(map);
+    markerClusterer.clearMarkers();
+    markers = [];
+    for (var dataPoint of envmaps[env_mode])
+        markers.push(new google.maps.Marker({
+            //icon: icon,
+            title: dataPoint.weight.toString(),
+            position: dataPoint.location,
+            value: dataPoint.weight
+        }));
+    markerClusterer.addMarkers(markers);
     
     route(_from, _to, travel_mode, directionsService, directionsDisplay);
 }
@@ -210,6 +217,12 @@ function route(_from, _to, travel_mode,
                 directionsService, directionsDisplay) {
     var fromValid = _from && _from.place_id;
     var toValid = _to && _to.place_id;
+    
+    // clear polylines/routes
+    polylines.forEach(function(polyline) {
+       polyline.setMap(null); 
+    });
+    
     if (!fromValid || !toValid) {
         directionsDisplay.setDirections(null);
         return;
@@ -219,10 +232,7 @@ function route(_from, _to, travel_mode,
         marker.setMap(null);
     });
     markers = [];
-    // clear polylines/routes
-    polylines.forEach(function(polyline) {
-       polyline.setMap(null); 
-    });
+    
     // new start and end markers
     markers.push(new google.maps.Marker({
         position: _from.geometry.location, 
@@ -250,17 +260,6 @@ function route(_from, _to, travel_mode,
                 var scores = [];
                 var bestRouteIndex = chooseBestRoute(response, map, scores);
                 for (var i = 0, len = response.routes.length; i < len; i++) {
-                    // directionRenderers.push(new google.maps.DirectionsRenderer({
-                    //     map: map,
-                    //     directions: response,
-                    //     routeIndex: i,
-                    //     polylineOptions: 
-                    //     {
-                    //         strokeColor: i == bestRouteIndex ? "#FF0000" : "#0088FF",
-                    //         strokeWeight: 6,
-                    //         strokeOpacity: 0.6
-                    //      }
-                    // }));
                     var polyline = new google.maps.Polyline({
                         path: [],
                         strokeColor: i == bestRouteIndex ? "#FF0000" : "#0088FF",
@@ -303,7 +302,7 @@ function chooseBestRoute(directionResult, map, scores) {
     var bestEnvScore;
     for (var route = 0; route < n_routes; route++) {
         var currentRoute = directionResult.routes[route].legs[0];
-        var score = integrate(currentRoute, nearestSensor, env_mode);
+        var score = average(currentRoute, nearestSensor, env_mode);
         scores.push(score);
         if (route == 0 || score < bestEnvScore)
         {
@@ -323,14 +322,13 @@ function chooseBestRoute(directionResult, map, scores) {
     return bestRouteIndex;
 }
 
-function integrate(route, func, envmode)
+function average(route, func, envmode)
 {
     var points = [];
     var resolution = 10;
-    var N = 1 / resolution;
     var sumInfluence = 0;
-    for (var i = 0; i <= 1; i += N) {
-        var point = LatLong(route, i);
+    for (var i = 0; i <= resolution; i++) {
+        var point = LatLong(route, i / resolution);
         points.push(point);
         if (!point)
         {
@@ -338,7 +336,7 @@ function integrate(route, func, envmode)
         }
         sumInfluence += func(objectsarray, envmode, point);
     }
-    return sumInfluence;
+    return sumInfluence / (resolution + 1);
 }
 
 // evaluate environment influence at position  according to envmode feature, e.g. "o2"
@@ -394,10 +392,15 @@ function initMap() {
 		disableDefaultUI: true,
 		zoomControl: false
 	});
+    markerClusterer = new MarkerClusterer(map, [], { 
+        gridSize: 50, 
+        minimumClusterSize: 1,
+        imagePath: "img/m"
+    });
     
-    google.maps.event.addListenerOnce(map, 'idle', function() {
-        google.maps.event.trigger(map, 'resize');
-    })
+    // google.maps.event.addListener(map, 'idle', function() {
+    //     google.maps.event.trigger(map, 'resize');
+    // });
     
     //    for (p of points) {
     //         var marker = new google.maps.Marker({
@@ -429,13 +432,12 @@ function initMap() {
         updateContent();
     });
     
-    // not working yet
-    searchField1.children(".ui-input-clear").click(function() {
-        window.alert("works");
+    // update view when deleting on address field
+    searchField1.next(".ui-input-clear").click(function() {
         _from = null;
         updateContent();
     });
-    searchField2.children(".ui-input-clear").click(function() {
+    searchField2.next(".ui-input-clear").click(function() {
         _to = null;
         updateContent();
     });
@@ -484,6 +486,7 @@ function LatLong(route, interpol) {
             }
         }
     }
+    return route.end_location;
 }
 
 function getDistanceFromLatLon(point1, point2) {

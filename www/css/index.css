@@ -35,8 +35,9 @@ body {
         color-stop(0, #A7A7A7),
         color-stop(0.51, #E4E4E4)
     );
+    
     background-attachment:fixed;
-    font-family:'HelveticaNeue-Light', 'HelveticaNeue', Helvetica, Arial, sans-serif;
+    font-family:Roboto, sans-serif;
     font-size:12px;
     height:100%;
     margin:0px;
@@ -114,7 +115,6 @@ h1 {
 }
 
 #fromInput, #toInput {
-  font-family: Roboto;
   font-size: 15px;
   font-weight: 300;
   margin-left: 12px;
@@ -138,4 +138,9 @@ h1 {
 #dropDownContainer.tableVisible
 {
 	top: 0;
+}
+
+.ui-radio *
+{
+    color: rgba(0,0,0,0.5) !important;
 }

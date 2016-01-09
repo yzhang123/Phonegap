@@ -23,13 +23,16 @@
     <head>
         <meta charset="utf-8" />
       	<!-- Include Cordova/PhoneGap -->
-        <script type="text/javascript" charset="utf-8" src="cordova.js"></script>	
+        <script type="text/javascript" charset="utf-8" src="cordova.js" onerror="window.onload=function(){app.onDeviceReady()}"></script>	
         <!-- Include the jQuery library -->
         <script src="jqm/jquery-1.11.3.js"></script>
         <!-- Include the jQuery Mobile CSS -->
         <link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
         <!-- Include the jQuery Mobile Library -->
         <script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+        <!-- Include the MarkerCluster -->
+        <script type="text/javascript" src="js/markerclusterer_compiled.js"></script>
+        <script type="text/javascript" src="js/markermanager_packed.js"></script>
         <!-- Include own JavaScript -->
         <script type="text/javascript" src="js/index.js"></script>
         <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
@@ -42,42 +45,44 @@
         <title>Hello World</title>
     </head>
     <body>
-        <div data-role="page" id="pageone" style="width:100%;height:100%;">
-           <div data-role="panel" class="slide-in" id="left-panel" data-theme="b" data-display="overlay">
+        <div data-role="page" id="pageone" style="width:100%;height:100%;" data-theme="a">
+           <div data-role="panel" class="slide-in" id="left-panel"  data-display="overlay" style="background-color: #e9e9e9">
                 <fieldset data-role="controlgroup">
+                    
                     <input type="radio" name="env" id="radio-choice-1" value="co" checked="checked" />
-                    <label for="radio-choice-1">CO</label>
+                    <label for="radio-choice-1">Carbon monoxide</label>
                     
                     <input type="radio" name="env" id="radio-choice-2" value="co2"  />
-                    <label for="radio-choice-2">CO2</label>
+                    <label for="radio-choice-2">Carbon dioxide</label>
                     
                     <input type="radio" name="env" id="radio-choice-3" value="dust"  />
-                    <label for="radio-choice-3">DUST</label>
+                    <label for="radio-choice-3">Dustiness</label>
                     
                     <input type="radio" name="env" id="radio-choice-4" value="hum"  />
-                    <label for="radio-choice-4">HUM</label>
+                    <label for="radio-choice-4">Humidity</label>
                     
                     <input type="radio" name="env" id="radio-choice-5" value="no2"  />
-                    <label for="radio-choice-5">NO2</label>
+                    <label for="radio-choice-5">Nitrogen dioxide</label>
                     
                     <input type="radio" name="env" id="radio-choice-6" value="o3"  />
-                    <label for="radio-choice-6">O3</label>   
+                    <label for="radio-choice-6">Ozone</label>   
                                      
                     <input type="radio" name="env" id="radio-choice-7" value="temp"  />
-                    <label for="radio-choice-7">TEMP</label>
+                    <label for="radio-choice-7">Heat</label>
                                              
                     <input type="radio" name="env" id="radio-choice-8" value="uv"  />
                     <label for="radio-choice-8">UV</label>
+                    
                     
                 </fieldset>
             </div><!-- /panel -->    
             <div data-role="header" data-position="fixed">
                 <!--<h1>EnvMap</h1>-->     
-                <div style="float:left" class="ui-nodisc-icon ui-alt-icon" >
-                    <a href="#left-panel" class="ui-btn ui-shadow ui-corner-all ui-icon-bullets ui-btn-icon-notext" id="openRightPanel" style="margin:10px"></a>
+                <div style="float:left" class="ui-nodisc-icon ui-icon" >
+                    <a href="#left-panel" class="ui-btn ui-corner-all ui-icon-bullets ui-btn-icon-notext" id="openRightPanel" style="margin:10px; background: rgba(0,0,0,0.3)"></a>
                 </div>
-                <div style="float:right" class="ui-nodisc-icon ui-alt-icon" >
-                    <a href="#" class="ui-btn ui-shadow ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px"></a>
+                <div style="float:right" class="ui-nodisc-icon ui-icon" >
+                    <a href="#" class="ui-btn ui-corner-all ui-icon-carat-d ui-btn-icon-notext" id="dropDownTable" onclick="dropDownTable()" style="margin:10px; background: rgba(0,0,0,0.3)"></a>
                 </div>
             </div>
             <div data-role="content" class="ui-content" style="padding:0; position:relative" >
@@ -86,7 +91,7 @@
                     <input id="fromInput" class="controls" type="text" placeholder="From:" data-clear-btn="true">
                     <input id="toInput" class="controls" type="text" placeholder="To:" data-clear-btn="true">
                 </div>
-                <div id="map" style="width:100%;height:100%;"></div>
+                <div id="map" style="width:100%;height:100%; text-shadow: none"></div>
             </div>
              
             <div data-role="footer" id="footer" ></div>
