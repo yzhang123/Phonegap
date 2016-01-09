@@ -140,7 +140,12 @@ h1 {
 	top: 0;
 }
 
-.ui-radio *
+.ui-radio *, .ui-checkbox *
 {
     color: rgba(0,0,0,0.5) !important;
+}
+
+#map.hideClusterIcons .clusterIcon
+{
+    display: none;
 }

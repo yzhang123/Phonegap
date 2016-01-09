@@ -141,16 +141,15 @@ function ondataready()
     $("input[name='env']").change(function() {
         if ($(this).is(':checked'))
         {
-            var old_mode = env_mode;
             env_mode = $(this).val();
-            refreshMap(old_mode);
+            refreshMap();
         }
     });
     
-    refreshMap(env_mode);
+    refreshMap();
 }
 
-function refreshMap(old_mode)
+function refreshMap()
 {
     if (!dataready)
     {
@@ -534,4 +533,16 @@ function dropDownTable() {
         dropDownContainer.removeClass("tableVisible");
     }
     
+}
+
+function toggleOnchange()
+{
+    var toggle = $("#envmap-toggle");
+    if (toggle.is(":checked")) {
+        $("#map").removeClass("hideClusterIcons");
+    } 
+    else
+    {
+        $("#map").addClass("hideClusterIcons");
+    }
 }
