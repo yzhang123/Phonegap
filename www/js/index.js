@@ -309,14 +309,6 @@ function chooseBestRoute(directionResult, map, scores) {
             bestEnvScore = score;
         }
     }
-    //var n = 1/10;
-    // for (var i = 0; i <= 1; i+=n) {
-    //     markers.push(new google.maps.Marker({
-    //             map: map,
-    //             position: LatLong(directionResult.routes[bestRouteIndex].legs[0], i)
-    //     }));
-    // }
-    
     onPolylineClick(bestRouteIndex, scores);
     return bestRouteIndex;
 }
@@ -359,7 +351,8 @@ function weightedsquareEvaluation(objects, envmode, position)
     return sumInfluence;
 }
 
-function nearestSensor(objects, envmode, position)
+// returns nearestSensorValue at a position
+function nearestSensorValue(objects, envmode, position)
 {
     if (objects.length == 0) {
         window.alert("no data points in data base");
