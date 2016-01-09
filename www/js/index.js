@@ -34,9 +34,7 @@ var text1;
 
 function main() 
 {
-    //button1 = $("#button1");
     text1 = $("#text1");
-    //button1.click(onclick);
     $(window).unbind();
     $(window).bind('pageshow resize orientationchange', function(e){
         adjustSize();
@@ -57,6 +55,7 @@ var directionsService = null;
 var envmaps = {};
 var features = [];
 var polylines = [];
+var activeInfoWindow = null;
 // if using this function specify callback function 
 // that takes the array of parsed objects as parameter
 function getData()
@@ -179,9 +178,10 @@ function refreshMap()
     {
         window.alert("cannot refresh map because data not ready");
     }
-    
+    $("#footer").text($("label[for=" + env_mode + "]").text());
     markerClusterer.clearMarkers();
     var markers = [];
+    closeInfoWindows();
     for (var dataPoint of envmaps[env_mode])
         markers.push(new google.maps.Marker({
             title: dataPoint.weight.toString(),
@@ -225,16 +225,29 @@ function addMarkerAtPlace(place, markerlabel)
     });
     marker.addListener("click", function()
         {
-            infoWindow.open(map, marker);       
+            
+            showInfoWindow(infoWindow, marker);  
         }
     );
     markers.push(marker);
     
     
 }
+
+function showInfoWindow(infoWindow, marker)
+{
+    closeInfoWindows();
+    activeInfoWindow = infoWindow;
+    infoWindow.open(map, marker);     
+}
+
+function closeInfoWindows(infoWindow)
+{
+    if (activeInfoWindow) activeInfoWindow.close();
+}
+
 // updates routing on map dependent on current start and end address
 function updateContent(adjustViewPort) {
-    
     deleteMarkers();
      // clear polylines/routes
     polylines.forEach(function(polyline) {
@@ -242,34 +255,20 @@ function updateContent(adjustViewPort) {
     });
     
     if (_from && _from.geometry) 
-    {
         addMarkerAtPlace(_from, "A");
-    }
     
     if (_to && _to.geometry) 
-    {
         addMarkerAtPlace(_to, "B");
-    }
     
     if (_from && _to)
-    {
         route(_from, _to, travel_mode, adjustViewPort, directionsService);
-    }
     else if (adjustViewPort)
     {
         if (_from && _from.geometry)
-        {
             expandViewportToFitPlace(map, _from);
-        }
         if (_to && _to.geometry)
-        {
             expandViewportToFitPlace(map, _to);
-        }  
     }
-   
-   
-    
-    
 }
 
 // calculates routing if start and end address are valid, otherwise clears all routes/polylines
@@ -292,21 +291,21 @@ function route(_from, _to, travel_mode, adjustViewPort,
                     var polyline = new google.maps.Polyline({
                         path: [],
                         strokeColor: i == bestRouteIndex ? "#FF0000" : "#0088FF",
-                        strokeWeight: 6,
+                        strokeWeight: 8,
                         strokeOpacity: 0.6
                     });
                     polylines.push(polyline);
                     var legs = response.routes[i].legs;
-                    for (var leg of legs) {
-                        for (var step of leg.steps) {
+                    for (var leg of legs) 
+                        for (var step of leg.steps) 
                             for (var nextSegment of step.path) {
                                 polyline.getPath().push(nextSegment);
                                 bounds.extend(nextSegment);
                             }
-                        }
-                    }
+                        
+                    
                     polyline.setMap(map);
-                    var clickHandler = (function (x) { return function() { onPolylineClick(x, scores); } })(i);
+                    var clickHandler = (function (x) { return function(event) { onPolylineClick(event, response.routes[x].legs[0], x, scores); } })(i);
                     google.maps.event.addListener(polyline, "click", clickHandler);
                 } 
                 if (adjustViewPort) map.fitBounds(bounds);
@@ -316,10 +315,26 @@ function route(_from, _to, travel_mode, adjustViewPort,
         });
 }
 
-// i-th polyline/ route is clicked, display its score extracted from scores
-function onPolylineClick(i, scores)
+function createTableRow(col1, col2)
 {
-    $("#footer").text(env_mode + ": " + scores[i]);
+    return "<tr><td>" + col1 + ": </td><td>" + col2 + "</td></tr>";
+}
+// i-th polyline/ route is clicked, display its score extracted from scores
+function onPolylineClick(event, route, i, scores)
+{
+    var clickPosition = event.latLng;
+    var infoWindow = new google.maps.InfoWindow();
+    var current_env_label = $("label[for=" + env_mode + "]").text();
+    var content = "<table>";
+    content += createTableRow(current_env_label, scores[i].toFixed(1));
+    content += createTableRow("Route Nr.",  i);
+    content += route.distance ? createTableRow("Distance", route.distance.value/1000 + "km") : "";
+    content += route.duration ? createTableRow("Duration", route.duration.value/60 + "min") : "";
+    content += "</table>";
+    infoWindow.setContent(content);
+    infoWindow.setPosition(clickPosition);
+    showInfoWindow(infoWindow);
+    
 }
     
 // // takes a directionsResult object as argument
@@ -338,7 +353,7 @@ function chooseBestRoute(directionResult, map, scores) {
             bestEnvScore = score;
         }
     }
-    onPolylineClick(bestRouteIndex, scores);
+    //onPolylineClick(bestRouteIndex, scores);
     return bestRouteIndex;
 }
 

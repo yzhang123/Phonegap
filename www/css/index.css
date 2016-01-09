@@ -178,3 +178,11 @@ h1 {
 {
     width: 50%;
 }
+
+#footer
+{
+    padding: 1em;
+    text-align: center;
+    height: 3em;
+    box-sizing: border-box;
+}
