@@ -149,3 +149,32 @@ h1 {
 {
     display: none;
 }
+
+#loading-screen
+{
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    background-color: #efefef;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#loading-screen > div
+{
+    text-align: center;
+    font-family: cursive;
+
+}
+
+#loading-screen label
+{
+    font-size: 50px;
+}
+
+#loading-screen img
+{
+    width: 50%;
+}

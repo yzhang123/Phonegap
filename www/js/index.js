@@ -149,6 +149,7 @@ function ondataready()
     refreshMap();
 }
 
+// refreshes map with all its markers and updates the routing accordingly 
 function refreshMap()
 {
     if (!dataready)
@@ -200,6 +201,7 @@ function expandViewportToFitPlace(map, place) {
     }
 }
 
+// updates routing on map dependent on current start and end address
 function updateContent() {
 
     if (_from && _from.geometry) {
@@ -210,8 +212,10 @@ function updateContent() {
     }
     
     route(_from, _to, travel_mode, directionsService, directionsDisplay);
+    
 }
 
+// calculates routing if start and end address are valid, otherwise clears all routes/polylines
 function route(_from, _to, travel_mode,
                 directionsService, directionsDisplay) {
     var fromValid = _from && _from.place_id;
@@ -232,19 +236,48 @@ function route(_from, _to, travel_mode,
     });
     markers = [];
     
+    var infowindows = [];
+    infowindows.push(new google.maps.InfoWindow(
+        {content: _from.name}
+    ));
+    infowindows.push(new google.maps.InfoWindow(
+        {content: _to.name}
+    ));
+    
     // new start and end markers
-    markers.push(new google.maps.Marker({
+    var markerA = new google.maps.Marker({
         position: _from.geometry.location, 
         map: map,
         label: "A",
         title: _from.name
-    }));
-    markers.push(new google.maps.Marker({
+    });
+    markers.push(markerA);
+    
+    markers[markers.length - 1].addListener("click", function()
+        {
+            infowindows[0].open(map, markerA);       
+        }
+    );
+
+    var markerB = new google.maps.Marker({
         position: _to.geometry.location, 
         map: map,
         label: "B",
         title: _to.name
-    }));
+    });
+    markers.push(markerB);
+    
+    markerA.addListener("click", function()
+        {
+            infowindows[0].open(map, markerA);       
+        }
+    );
+    
+    markerB.addListener("click", function()
+        {
+            infowindows[1].open(map, markerB);       
+        }
+    );
     var directionRequest = {
         origin: {'placeId': _from.place_id},
         destination: {'placeId': _to.place_id},
@@ -397,9 +430,9 @@ function initMap() {
         imagePath: "img/m"
     });
     
-    // google.maps.event.addListener(map, 'idle', function() {
-    //     google.maps.event.trigger(map, 'resize');
-    // });
+    google.maps.event.addListenerOnce(map, 'idle', function() { 
+        $("#loading-screen").css("display", "none");
+    });
     
     //    for (p of points) {
     //         var marker = new google.maps.Marker({
