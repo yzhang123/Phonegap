@@ -54,7 +54,6 @@ var travel_mode = null;
 var _from = null;
 var _to = null;
 var directionsService = null;
-var directionsDisplay = null;
 var envmaps = {};
 var features = [];
 var polylines = [];
@@ -161,14 +160,13 @@ function refreshMap()
     var markers = [];
     for (var dataPoint of envmaps[env_mode])
         markers.push(new google.maps.Marker({
-            //icon: icon,
             title: dataPoint.weight.toString(),
             position: dataPoint.location,
             value: dataPoint.weight
         }));
     markerClusterer.addMarkers(markers);
     
-    updateContent();
+    updateContent(false);
 }
 
 function expandViewportToFitPlace(map, place) {
@@ -176,7 +174,6 @@ function expandViewportToFitPlace(map, place) {
         map.fitBounds(place.geometry.viewport);
     } else {
         map.setCenter(place.geometry.location);
-        map.setZoom(17);
     }
 }
 
@@ -190,15 +187,17 @@ function deleteMarkers()
 }
 
 // add marker with given label and info window with place name to given place
-function addMarkerToPlace(place, markerlabel)
+function addMarkerAtPlace(place, markerlabel)
 {
      var marker = new google.maps.Marker({
         position: place.geometry.location, 
         map: map,
         label: markerlabel
     });
+    
+    var env_value = nearestSensorValue(objectsarray, env_mode, place.geometry.location);
     var infoWindow = new google.maps.InfoWindow({
-        content: place.name
+        content: place.name + "<br>" + env_value
     });
     marker.addListener("click", function()
         {
@@ -206,9 +205,11 @@ function addMarkerToPlace(place, markerlabel)
         }
     );
     markers.push(marker);
+    
+    
 }
 // updates routing on map dependent on current start and end address
-function updateContent() {
+function updateContent(adjustViewPort) {
     
     deleteMarkers();
      // clear polylines/routes
@@ -218,33 +219,38 @@ function updateContent() {
     
     if (_from && _from.geometry) 
     {
-        addMarkerToPlace(_from, "A");
+        addMarkerAtPlace(_from, "A");
     }
     
     if (_to && _to.geometry) 
     {
-        addMarkerToPlace(_to, "B");
+        addMarkerAtPlace(_to, "B");
     }
     
     if (_from && _to)
     {
-        route(_from, _to, travel_mode, directionsService, directionsDisplay);
+        route(_from, _to, travel_mode, adjustViewPort, directionsService);
     }
-    else if (_from && _from.geometry)
+    else if (adjustViewPort)
     {
-        expandViewportToFitPlace(map, _from);
+        if (_from && _from.geometry)
+        {
+            expandViewportToFitPlace(map, _from);
+        }
+        if (_to && _to.geometry)
+        {
+            expandViewportToFitPlace(map, _to);
+        }  
     }
-    else if (_to && _to.geometry)
-    {
-        expandViewportToFitPlace(map, _to);
-    }  
+   
+   
     
     
 }
 
 // calculates routing if start and end address are valid, otherwise clears all routes/polylines
-function route(_from, _to, travel_mode,
-                directionsService, directionsDisplay) {
+function route(_from, _to, travel_mode, adjustViewPort,
+                directionsService) {
     var directionRequest = {
         origin: {'placeId': _from.place_id},
         destination: {'placeId': _to.place_id},
@@ -255,9 +261,9 @@ function route(_from, _to, travel_mode,
         directionRequest, 
         function(response, status) {
             if (status === google.maps.DirectionsStatus.OK) {
-                //directionsDisplay.setDirections(response);
                 var scores = [];
                 var bestRouteIndex = chooseBestRoute(response, map, scores);
+                var bounds = new google.maps.LatLngBounds();
                 for (var i = 0, len = response.routes.length; i < len; i++) {
                     var polyline = new google.maps.Polyline({
                         path: [],
@@ -266,7 +272,6 @@ function route(_from, _to, travel_mode,
                         strokeOpacity: 0.6
                     });
                     polylines.push(polyline);
-                    var bounds = new google.maps.LatLngBounds();
                     var legs = response.routes[i].legs;
                     for (var leg of legs) {
                         for (var step of leg.steps) {
@@ -277,10 +282,10 @@ function route(_from, _to, travel_mode,
                         }
                     }
                     polyline.setMap(map);
-                    map.fitBounds(bounds);
                     var clickHandler = (function (x) { return function() { onPolylineClick(x, scores); } })(i);
                     google.maps.event.addListener(polyline, "click", clickHandler);
                 } 
+                if (adjustViewPort) map.fitBounds(bounds);
             } else {
                 window.alert('Directions request failed due to ' + status);
             }
@@ -301,7 +306,7 @@ function chooseBestRoute(directionResult, map, scores) {
     var bestEnvScore;
     for (var route = 0; route < n_routes; route++) {
         var currentRoute = directionResult.routes[route].legs[0];
-        var score = average(currentRoute, nearestSensor, env_mode);
+        var score = average(currentRoute, nearestSensorValue, env_mode);
         scores.push(score);
         if (route == 0 || score < bestEnvScore)
         {
@@ -394,19 +399,10 @@ function initMap() {
         $("#loading-screen").css("display", "none");
     });
     
-    //    for (p of points) {
-    //         var marker = new google.maps.Marker({
-    //             position: p.location, 
-    //             map: map2
-    //         });
-    //    }
-    
     // function call getData, async code
     getData();
     
     directionsService = new google.maps.DirectionsService;
-    directionsDisplay = new google.maps.DirectionsRenderer;
-    directionsDisplay.setMap(map);
     var searchField1 = $("#fromInput");
     var searchField2 = $("#toInput");
     var autocomplete1 = new google.maps.places.Autocomplete(searchField1[0]);
@@ -416,23 +412,23 @@ function initMap() {
     // if from input text field adress is changed
     autocomplete1.addListener('place_changed', function() {
         _from = autocomplete1.getPlace();
-        updateContent();
+        updateContent(true);
     });
     // if to input text field adress is changed
     autocomplete2.addListener('place_changed', function() {
         _to = autocomplete2.getPlace();
-        updateContent();
+        updateContent(true);
     });
     
     // update view when deleting on address field
     searchField1.next(".ui-input-clear").click(function() {
         _from = null;
-        updateContent();
+        updateContent(false);
         
     });
     searchField2.next(".ui-input-clear").click(function() {
         _to = null;
-        updateContent();
+        updateContent(false);
     });
 }
 // end of async initMap
