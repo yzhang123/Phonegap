@@ -65,7 +65,8 @@ function getData()
         if (status == "success")
         {
             var objects = parseJSONData(result);
-            features = ['co', 'co2', 'dust', 'hum', 'no2', 'o3', 'temp', 'uv'];
+            objects = filterData(objects);
+            features = ['co', 'co2', 'dust', 'height', 'hum', 'no2', 'o3', 'temp', 'uv'];
             for( var o of objects) {
                 var obj = {};
                 obj.location = new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon));
@@ -80,6 +81,29 @@ function getData()
         }
     });
     
+}
+
+// filters only latest data measured at about the same position
+function filterData(data) {
+    var keys = [];
+    data = data.sort(function(a, b) {
+       return b.time - a.time; 
+    });
+    function isUnique(elem)
+    {
+        var key = parseFloat(elem.lat).toFixed(4) + " " + parseFloat(elem.lon).toFixed(4);
+        if (keys.indexOf(key) != -1 )
+        {
+            return false;
+        }
+        else 
+        {
+            keys.push(key);
+            return true;
+        }
+    }
+    var result = data.filter(isUnique);
+    return result;
 }
 
 // returns objects array, each element is an object that correspond to one row of data
