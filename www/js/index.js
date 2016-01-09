@@ -124,7 +124,7 @@ function adjustSize() {
         google.maps.event.trigger(map, 'resize');
 }
 
-// when data base successfully retrieved
+// when data base successfully retrieved refreshes map
 function ondataready() 
 {
     dataready = true;
@@ -158,7 +158,7 @@ function refreshMap()
     }
     
     markerClusterer.clearMarkers();
-    markers = [];
+    var markers = [];
     for (var dataPoint of envmaps[env_mode])
         markers.push(new google.maps.Marker({
             //icon: icon,
@@ -168,31 +168,10 @@ function refreshMap()
         }));
     markerClusterer.addMarkers(markers);
     
-    route(_from, _to, travel_mode, directionsService, directionsDisplay);
+    updateContent();
 }
 
 function expandViewportToFitPlace(map, place) {
-    markers.forEach(function(marker) {
-        marker.setMap(null);
-    });
-    markers = [];
-    // For each place, get the icon, name and location.
-    var icon = {
-        url: place.icon,
-        size: new google.maps.Size(71, 71),
-        origin: new google.maps.Point(0, 0),
-        anchor: new google.maps.Point(17, 34),
-        scaledSize: new google.maps.Size(25, 25)
-    };
-
-    // Create a marker for each place.
-    markers.push(new google.maps.Marker({
-        map: map,
-        icon: icon,
-        title: place.name,
-        position: place.geometry.location
-    }));
-    
     if (place.geometry.viewport) {
         map.fitBounds(place.geometry.viewport);
     } else {
@@ -201,83 +180,71 @@ function expandViewportToFitPlace(map, place) {
     }
 }
 
+// delete all markers
+function deleteMarkers()
+{
+    markers.forEach(function(marker) {
+        marker.setMap(null);
+    });
+    markers = [];
+}
+
+// add marker with given label and info window with place name to given place
+function addMarkerToPlace(place, markerlabel)
+{
+     var marker = new google.maps.Marker({
+        position: place.geometry.location, 
+        map: map,
+        label: markerlabel
+    });
+    var infoWindow = new google.maps.InfoWindow({
+        content: place.name
+    });
+    marker.addListener("click", function()
+        {
+            infoWindow.open(map, marker);       
+        }
+    );
+    markers.push(marker);
+}
 // updates routing on map dependent on current start and end address
 function updateContent() {
-
-    if (_from && _from.geometry) {
-        expandViewportToFitPlace(map, _from);
-    }
-    if (_to && _to.geometry) {
-        expandViewportToFitPlace(map, _to);
+    
+    deleteMarkers();
+     // clear polylines/routes
+    polylines.forEach(function(polyline) {
+       polyline.setMap(null); 
+    });
+    
+    if (_from && _from.geometry) 
+    {
+        addMarkerToPlace(_from, "A");
     }
     
-    route(_from, _to, travel_mode, directionsService, directionsDisplay);
+    if (_to && _to.geometry) 
+    {
+        addMarkerToPlace(_to, "B");
+    }
+    
+    if (_from && _to)
+    {
+        route(_from, _to, travel_mode, directionsService, directionsDisplay);
+    }
+    else if (_from && _from.geometry)
+    {
+        expandViewportToFitPlace(map, _from);
+    }
+    else if (_to && _to.geometry)
+    {
+        expandViewportToFitPlace(map, _to);
+    }  
+    
     
 }
 
 // calculates routing if start and end address are valid, otherwise clears all routes/polylines
 function route(_from, _to, travel_mode,
                 directionsService, directionsDisplay) {
-    var fromValid = _from && _from.place_id;
-    var toValid = _to && _to.place_id;
-    
-    // clear polylines/routes
-    polylines.forEach(function(polyline) {
-       polyline.setMap(null); 
-    });
-    
-    if (!fromValid || !toValid) {
-        directionsDisplay.setDirections(null);
-        return;
-    }
-    // clear markers
-    markers.forEach(function(marker) {
-        marker.setMap(null);
-    });
-    markers = [];
-    
-    var infowindows = [];
-    infowindows.push(new google.maps.InfoWindow(
-        {content: _from.name}
-    ));
-    infowindows.push(new google.maps.InfoWindow(
-        {content: _to.name}
-    ));
-    
-    // new start and end markers
-    var markerA = new google.maps.Marker({
-        position: _from.geometry.location, 
-        map: map,
-        label: "A",
-        title: _from.name
-    });
-    markers.push(markerA);
-    
-    markers[markers.length - 1].addListener("click", function()
-        {
-            infowindows[0].open(map, markerA);       
-        }
-    );
-
-    var markerB = new google.maps.Marker({
-        position: _to.geometry.location, 
-        map: map,
-        label: "B",
-        title: _to.name
-    });
-    markers.push(markerB);
-    
-    markerA.addListener("click", function()
-        {
-            infowindows[0].open(map, markerA);       
-        }
-    );
-    
-    markerB.addListener("click", function()
-        {
-            infowindows[1].open(map, markerB);       
-        }
-    );
     var directionRequest = {
         origin: {'placeId': _from.place_id},
         destination: {'placeId': _to.place_id},
@@ -468,6 +435,7 @@ function initMap() {
     searchField1.next(".ui-input-clear").click(function() {
         _from = null;
         updateContent();
+        
     });
     searchField2.next(".ui-input-clear").click(function() {
         _to = null;
