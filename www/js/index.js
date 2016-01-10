@@ -310,7 +310,7 @@ function route(_from, _to, travel_mode, adjustViewPort,
                 } 
                 if (adjustViewPort) map.fitBounds(bounds);
             } else {
-                window.alert('Directions request failed due to ' + status);
+                window.alert('Failed to Find Directions for ' + travel_mode);
             }
         });
 }
