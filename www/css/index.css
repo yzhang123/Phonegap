@@ -188,10 +188,29 @@ h1 {
 }
 
 .ui-icon-walking {
-	background-image: url(img/walking18.png) !important;
-    background-size: 18px 18px;
-    /*width: 18px;
-    height: 18px;*/
-    margin: 0 !important;
+	background-image: url(../img/walking.png) !important;
+    background-repeat: no-repeat !important; 
+    background-position: center !important;
+    background-size: 18px 18px !important;
 }
+.ui-icon-transit {
+	background-image: url(../img/transit.png) !important;
+    background-repeat: no-repeat !important; 
+    background-position: center !important;
+    background-size: 18px 18px !important;
+}
+.ui-icon-driving {
+	background-image: url(../img/driving.png) !important;
+    background-repeat: no-repeat !important; 
+    background-position: center !important;
+    background-size: 18px 18px !important;
+}
+.ui-icon-bicycling {
+	background-image: url(../img/bicycling.png) !important;
+    background-repeat: no-repeat !important; 
+    background-position: center !important;
+    background-size: 18px 18px !important;
+}
+
+
 
