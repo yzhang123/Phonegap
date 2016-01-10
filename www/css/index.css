@@ -186,3 +186,12 @@ h1 {
     height: 3em;
     box-sizing: border-box;
 }
+
+.ui-icon-walking {
+	background-image: url(img/walking18.png) !important;
+    background-size: 18px 18px;
+    /*width: 18px;
+    height: 18px;*/
+    margin: 0 !important;
+}
+
