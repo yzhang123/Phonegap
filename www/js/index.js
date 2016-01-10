@@ -328,8 +328,9 @@ function onPolylineClick(event, route, i, scores)
     var content = "<table>";
     content += createTableRow(current_env_label, scores[i].toFixed(1));
     content += createTableRow("Route Nr.",  i);
-    content += route.distance ? createTableRow("Distance", route.distance.value/1000 + "km") : "";
-    content += route.duration ? createTableRow("Duration", route.duration.value/60 + "min") : "";
+    content += createTableRow("Travel mode",  travel_mode);
+    content += route.distance ? createTableRow("Distance", (route.distance.value/1000).toFixed(2) + " km") : "";
+    content += route.duration ? createTableRow("Duration", (route.duration.value/60).toFixed(2) + " min") : "";
     content += "</table>";
     infoWindow.setContent(content);
     infoWindow.setPosition(clickPosition);
@@ -438,9 +439,18 @@ function initMap() {
         $("#loading-screen").css("display", "none");
     });
     
+    
     // function call getData, async code
     getData();
     
+    
+    $("a.travel-mode").click(
+        function(){
+            var id = $(this).attr("id"); 
+            travel_mode = google.maps.TravelMode[id];
+            updateContent(false);
+        }    
+    );
     directionsService = new google.maps.DirectionsService;
     var searchField1 = $("#fromInput");
     var searchField2 = $("#toInput");
