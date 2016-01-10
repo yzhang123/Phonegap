@@ -7,6 +7,20 @@ window.onerror = function (errorMsg, url, lineNumber) {
     return false;
 };
 
+$.fn.preBind = function (type, data, fn) {
+    this.each(function () {
+        var $this = $(this);
+
+        $this.bind(type, data, fn);
+
+        var currentBindings = $._data(this, 'events')[type];
+        if ($.isArray(currentBindings)) {
+            currentBindings.unshift(currentBindings.pop());
+        }
+    });
+    return this;
+};
+
 var URL = "data.json"; // TODO: change back to: "http://portal.teco.edu/guerilla/guerillaSensingServer/index.php/tsdb_query_data/";
 var app = {
     // Application Constructor
@@ -423,7 +437,7 @@ function initMap() {
     // Create map object with parameters.
 	map = new google.maps.Map(document.getElementById('map'), {
 		zoom: 14,										// Initial zoom
-		center: {lat: 49.0128925 , lng: 8.4240023}, 			// Initial LatLong Position.
+		center: {lat: 49.0146208, lng: 8.3949888},     // Initial LatLong Position.
 		mapTypeId: google.maps.MapTypeId.ROADMAP,		// Map type.
 		streetViewControl: false,						// Disable all controls
 		disableDefaultUI: true,
@@ -470,19 +484,82 @@ function initMap() {
     });
     
     // update view when deleting on address field
-    searchField1.next(".ui-input-clear").click(function() {
-        _from = null;
-        updateContent(false);
-        
+    searchField1.next(".ui-input-clear").preBind("click", function(event) {
+        if ($(this).hasClass("ui-input-clear-hidden"))
+        {
+            // stop further event handlers on the same button, in this case clearing the field since we use the same button for 2 purposes, i.e. clear and locate
+            event.stopImmediatePropagation();
+            getCurrentLocation(function(location) {
+                searchField1.val(location);
+                searchField1.trigger("input");
+            });
+        }
+        else 
+        {    
+            _from = null;
+            updateContent(false);
+        }
     });
-    searchField2.next(".ui-input-clear").click(function() {
-        _to = null;
-        updateContent(false);
+    searchField2.next(".ui-input-clear").preBind("click", function(event) {
+        if ($(this).hasClass("ui-input-clear-hidden"))
+        {
+            event.stopImmediatePropagation();
+            getCurrentLocation(function(location) {
+                searchField2.val(location);
+                searchField2.trigger("input");
+            });
+        }
+        else 
+        {    
+            _to = null;
+            updateContent(false);
+        }
     });
 }
 // end of async initMap
 
 
+// returns current autocomplete address
+function getCurrentLocation(callback)
+{
+    var geocoder = new google.maps.Geocoder;
+    if (navigator.geolocation)
+    {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            var pos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+    
+            geocoder.geocode({'location': pos}, function(results, status) {
+                if (status === google.maps.GeocoderStatus.OK) {
+                    if (results[0]) {
+                        callback(results[0].formatted_address);
+                    }
+                }
+            });
+        }, function() {
+            var infowindow = new google.maps.InfoWindow({map: map});
+            handleLocationError(true, infowindow, map.getCenter());
+        });
+        
+    //return "currentLocation";    
+    } 
+    else
+    {
+        // Browser doesn't support Geolocation
+        var infowindow = new google.maps.InfoWindow({map: map});
+        handleLocationError(false, infowindow, map.getCenter());    
+    }
+    
+}
+
+function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+  infoWindow.setPosition(pos);
+  infoWindow.setContent(browserHasGeolocation ?
+                        'Error: The Geolocation service failed.' :
+                        'Error: Your browser doesn\'t support geolocation.');
+}
 // Directionsleg object = route, interpol [0,1]
 function LatLong(route, interpol) {
     var totalDistance = route.distance.value;

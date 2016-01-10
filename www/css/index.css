@@ -140,6 +140,17 @@ h1 {
 	top: 0;
 }
 
+#dropDownContainer .ui-input-clear-hidden 
+{
+    display: block !important;
+    
+}
+
+#dropDownContainer .ui-input-clear-hidden::after
+{
+    background-image: url('../img/location.svg') !important;
+}
+
 .ui-radio *, .ui-checkbox *
 {
     color: rgba(0,0,0,0.5) !important;
