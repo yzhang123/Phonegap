@@ -507,6 +507,7 @@ function initMap() {
             getCurrentLocation(function(location) {
                 searchField2.val(location);
                 searchField2.trigger("input");
+                
             });
         }
         else 
@@ -634,17 +635,13 @@ function deg2rad(deg) {
 function dropDownTable() {
     var arrow = $("#dropDownTable"); 
     var dropDownContainer = $("#dropDownContainer");
-    if (arrow.hasClass("ui-icon-carat-d"))
+    if (!dropDownContainer.hasClass("tableVisible"))
     {
-        arrow.removeClass("ui-icon-carat-d");    
-        arrow.addClass("ui-icon-carat-u");
         // show table
         dropDownContainer.addClass("tableVisible");
     }
     else 
     {
-        arrow.removeClass("ui-icon-carat-u");    
-        arrow.addClass("ui-icon-carat-d");
         // delete table
         dropDownContainer.removeClass("tableVisible");
     }
