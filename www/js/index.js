@@ -1,27 +1,3 @@
-/* global x */
-window.onerror = function (errorMsg, url, lineNumber) {
-    window.alert("ERROR");
-    window.alert(errorMsg);
-    window.alert(url);
-    window.alert(lineNumber);
-    return false;
-};
-
-$.fn.preBind = function (type, data, fn) {
-    this.each(function () {
-        var $this = $(this);
-
-        $this.bind(type, data, fn);
-
-        var currentBindings = $._data(this, 'events')[type];
-        if ($.isArray(currentBindings)) {
-            currentBindings.unshift(currentBindings.pop());
-        }
-    });
-    return this;
-};
-
-var URL = "data.json"; // TODO: change back to: "http://portal.teco.edu/guerilla/guerillaSensingServer/index.php/tsdb_query_data/";
 var app = {
     // Application Constructor
     initialize: function() {
@@ -35,116 +11,37 @@ var app = {
         document.addEventListener('deviceready', this.onDeviceReady, false);
     },
     // deviceready Event Handler
-    //
-    // The scope of 'this' is the event. In order to call the 'receivedEvent'
-    // function, we must explicitly call 'app.receivedEvent(...);'
     onDeviceReady: function() {
         main();
     }
 };
 
-var button1;
-var text1;
-
 function main() 
 {
-    text1 = $("#text1");
     $(window).unbind();
-    $(window).bind('pageshow resize orientationchange', function(e){
-        adjustSize();
-    });
+    $(window).bind('pageshow resize orientationchange', function() { adjustSize(); });
     adjustSize();
+
+    $("input[name='env']").change(function() {
+        if ($(this).is(':checked'))
+        {
+            env_mode = $(this).val();
+            refreshMap();
+        }
+    });
+    
+    $("#map").click(function() { $("#dropDownContainer").removeClass("tableVisible"); });
 }
 
 var map;
 var markerClusterer;
 var markers = [];
-var env_mode = "co";
-var dataready = false;
-var objectsarray = [];
 var travel_mode = null;
 var _from = null;
 var _to = null;
 var directionsService = null;
-var envmaps = {};
-var features = [];
+var env_mode = features[0];
 var polylines = [];
-var activeInfoWindow = null;
-// if using this function specify callback function 
-// that takes the array of parsed objects as parameter
-function getData()
-{
-    $.getJSON(URL, function(result, status) {
-        if (status == "success")
-        {
-            var objects = parseJSONData(result);
-            objects = filterData(objects);
-            features = ['co', 'co2', 'dust', 'height', 'hum', 'no2', 'o3', 'temp', 'uv'];
-            for( var o of objects) {
-                var obj = {};
-                obj.location = new google.maps.LatLng(parseFloat(o.lat), parseFloat(o.lon));
-                for (var i of features)
-                {
-                   obj[i] = parseFloat(o[i]); 
-                }
-                objectsarray.push(obj);
-
-            }
-            ondataready();
-        }
-    });
-    
-}
-
-// filters only latest data measured at about the same position
-function filterData(data) {
-    var keys = [];
-    data = data.sort(function(a, b) {
-       return b.time - a.time; 
-    });
-    function isUnique(elem)
-    {
-        var key = parseFloat(elem.lat).toFixed(4) + " " + parseFloat(elem.lon).toFixed(4);
-        if (keys.indexOf(key) != -1 )
-        {
-            return false;
-        }
-        else 
-        {
-            keys.push(key);
-            return true;
-        }
-    }
-    var result = data.filter(isUnique);
-    return result;
-}
-
-// returns objects array, each element is an object that correspond to one row of data
-// retrieve data by accessing the feature e.g. "time", "sequence_number" ect
-// returns raw data
-function parseJSONData(data)
-{
-    var objects = [];
-    if (data.length > 1)
-    {
-        window.alert(data.length + " objects!");
-    } 
-    else 
-    {
-        var columns = data[0].columns;
-        for (var p of data[0].points)
-        {
-            var o = { };
-            for (var i in columns)
-            {
-                o[columns[i]] = p[i];
-            }
-            objects.push(o);
-        }
-    }
-    //text1.text(JSON.stringify(objects));
-    return objects;
-}
 
 // on window resize
 function adjustSize() {
@@ -160,42 +57,14 @@ function adjustSize() {
         google.maps.event.trigger(map, 'resize');
 }
 
-// when data base successfully retrieved refreshes map
-function ondataready() 
-{
-    dataready = true;
- 
-    for (var i = 0; i < features.length; ++i)
-    {    
-        var temp = [];
-        for( var o of objectsarray) {
-            temp.push({location: o.location, weight: o[features[i]] });
-        }
-        envmaps[features[i]] = temp;
-    }
-    
-    $("input[name='env']").change(function() {
-        if ($(this).is(':checked'))
-        {
-            env_mode = $(this).val();
-            refreshMap();
-        }
-    });
-    
-    refreshMap();
-}
-
 // refreshes map with all its markers and updates the routing accordingly 
 function refreshMap()
 {
-    if (!dataready)
-    {
-        window.alert("cannot refresh map because data not ready");
-    }
-    $("#footer").text($("label[for=" + env_mode + "]").text());
+    closeInfoWindows();
+    $("#footer").text(featureLabel(env_mode));
+    
     markerClusterer.clearMarkers();
     var markers = [];
-    closeInfoWindows();
     for (var dataPoint of envmaps[env_mode])
         markers.push(new google.maps.Marker({
             title: dataPoint.weight.toString(),
@@ -207,21 +76,12 @@ function refreshMap()
     updateContent(false);
 }
 
-function expandViewportToFitPlace(map, place) {
-    if (place.geometry.viewport) {
-        map.fitBounds(place.geometry.viewport);
-    } else {
-        map.setCenter(place.geometry.location);
-    }
-}
-
-// delete all markers
-function deleteMarkers()
+function expandViewportToFitPlace(map, place) 
 {
-    markers.forEach(function(marker) {
-        marker.setMap(null);
-    });
-    markers = [];
+    if (place.geometry.viewport)
+        map.fitBounds(place.geometry.viewport);
+    else
+        map.setCenter(place.geometry.location);
 }
 
 // add marker with given label and info window with place name to given place
@@ -232,52 +92,39 @@ function addMarkerAtPlace(place, markerlabel)
         map: map,
         label: markerlabel
     });
-    
+
     var env_value = nearestSensorValue(objectsarray, env_mode, place.geometry.location);
-    var infoWindow = new google.maps.InfoWindow({
-        content: place.name + "<br>" + env_value
-    });
     marker.addListener("click", function()
         {
-            
-            showInfoWindow(infoWindow, marker);  
-        }
-    );
+            showInfoWindow($("<span>")
+                .append(place.name)
+                .append($("<br>"))
+                .append(env_value), marker);  
+        });
     markers.push(marker);
-    
-    
 }
-
-function showInfoWindow(infoWindow, marker)
-{
-    closeInfoWindows();
-    activeInfoWindow = infoWindow;
-    infoWindow.open(map, marker);     
-}
-
-function closeInfoWindows(infoWindow)
-{
-    if (activeInfoWindow) activeInfoWindow.close();
-}
-
 // updates routing on map dependent on current start and end address
 function updateContent(adjustViewPort) {
-    deleteMarkers();
+    // clear markers
+    for (var marker of markers)
+        marker.setMap(null);
+    markers = [];
+
      // clear polylines/routes
-    polylines.forEach(function(polyline) {
-       polyline.setMap(null); 
-    });
-    
-    if (_from && _from.geometry) 
+    for (var polyline of polylines)
+        polyline.setMap(null);
+
+    // add markers
+    if (_from && _from.geometry)
         addMarkerAtPlace(_from, "A");
-    
-    if (_to && _to.geometry) 
+    if (_to && _to.geometry)
         addMarkerAtPlace(_to, "B");
-    
+
+    // add routes
     if (_from && _to)
         route(_from, _to, travel_mode, adjustViewPort, directionsService);
     else if (adjustViewPort)
-    {
+    {   // adjust viewport
         if (_from && _from.geometry)
             expandViewportToFitPlace(map, _from);
         if (_to && _to.geometry)
@@ -286,11 +133,10 @@ function updateContent(adjustViewPort) {
 }
 
 // calculates routing if start and end address are valid, otherwise clears all routes/polylines
-function route(_from, _to, travel_mode, adjustViewPort,
-                directionsService) {
+function route(_from, _to, travel_mode, adjustViewPort, directionsService) {
     var directionRequest = {
-        origin: {'placeId': _from.place_id},
-        destination: {'placeId': _to.place_id},
+        origin: { 'placeId': _from.place_id },
+        destination: { 'placeId': _to.place_id },
         provideRouteAlternatives: true,
         travelMode: travel_mode
     }
@@ -316,8 +162,7 @@ function route(_from, _to, travel_mode, adjustViewPort,
                                 polyline.getPath().push(nextSegment);
                                 bounds.extend(nextSegment);
                             }
-                        
-                    
+
                     polyline.setMap(map);
                     var clickHandler = (function (x) { return function(event) { onPolylineClick(event, response.routes[x].legs[0], x, scores); } })(i);
                     google.maps.event.addListener(polyline, "click", clickHandler);
@@ -331,25 +176,22 @@ function route(_from, _to, travel_mode, adjustViewPort,
 
 function createTableRow(col1, col2)
 {
-    return "<tr><td>" + col1 + ": </td><td>" + col2 + "</td></tr>";
+    return $("<tr>")
+        .append($("<td>").text(col1))
+        .append($("<td>").text(col2));
 }
 // i-th polyline/ route is clicked, display its score extracted from scores
 function onPolylineClick(event, route, i, scores)
 {
-    var clickPosition = event.latLng;
-    var infoWindow = new google.maps.InfoWindow();
-    var current_env_label = $("label[for=" + env_mode + "]").text();
-    var content = "<table>";
-    content += createTableRow(current_env_label, scores[i].toFixed(1));
-    content += createTableRow("Route Nr.",  i);
-    content += createTableRow("Travel mode",  travel_mode);
-    content += route.distance ? createTableRow("Distance", (route.distance.value/1000).toFixed(2) + " km") : "";
-    content += route.duration ? createTableRow("Duration", (route.duration.value/60).toFixed(2) + " min") : "";
-    content += "</table>";
-    infoWindow.setContent(content);
-    infoWindow.setPosition(clickPosition);
-    showInfoWindow(infoWindow);
-    
+    var content = $("<table>").addClass("route-info-window")
+        .append(createTableRow(featureLabel(env_mode), scores[i].toFixed(1)))
+        .append(createTableRow("Route Nr.",  i))
+        .append(createTableRow("Travel mode",  travel_mode));
+    if (route.distance)
+        content.append(createTableRow("Distance", (route.distance.value / 1000).toFixed(2) + " km"));
+    if (route.duration)
+        content.append(createTableRow("Duration", (route.duration.value / 60).toFixed(2) + " min"));
+    showInfoWindow(content, undefined, event.latLng);
 }
     
 // // takes a directionsResult object as argument
@@ -358,7 +200,8 @@ function chooseBestRoute(directionResult, map, scores) {
     var n_routes = directionResult.routes.length;
     var bestRouteIndex;
     var bestEnvScore;
-    for (var route = 0; route < n_routes; route++) {
+    for (var route = 0; route < n_routes; route++)
+    {
         var currentRoute = directionResult.routes[route].legs[0];
         var score = average(currentRoute, nearestSensorValue, env_mode);
         scores.push(score);
@@ -374,16 +217,12 @@ function chooseBestRoute(directionResult, map, scores) {
 
 function average(route, func, envmode)
 {
-    var points = [];
     var resolution = 10;
     var sumInfluence = 0;
     for (var i = 0; i <= resolution; i++) {
         var point = LatLong(route, i / resolution);
-        points.push(point);
         if (!point)
-        {
-            window.alert("point undefined "+ i );
-        }
+            window.alert("point undefined " + i);
         sumInfluence += func(objectsarray, envmode, point);
     }
     return sumInfluence / (resolution + 1);
@@ -392,30 +231,27 @@ function average(route, func, envmode)
 // evaluate environment influence at position  according to envmode feature, e.g. "o2"
 function weightedsquareEvaluation(objects, envmode, position)
 {
-    if (objects.length == 0) {
+    if (objects.length == 0)
         window.alert("no data points in data base");
-    }
+
     var minInfluenceDist = 1000;
     var sumInfluence = 0;
     for (var obj of objects)
     {
-
         var dist = getDistanceFromLatLon(obj.location, position);
         if (dist < minInfluenceDist)
-        {
-            sumInfluence += obj[envmode]/(dist * dist);
-        }
+            sumInfluence += obj[envmode] / (dist * dist);
     }
-    
+
     return sumInfluence;
 }
 
 // returns nearestSensorValue at a position
 function nearestSensorValue(objects, envmode, position)
 {
-    if (objects.length == 0) {
+    if (objects.length == 0)
         window.alert("no data points in data base");
-    }
+
     var nearestSensor = objects[0];
     var minDist = getDistanceFromLatLon(nearestSensor.location, position);
     for (var obj of objects)
@@ -427,7 +263,7 @@ function nearestSensorValue(objects, envmode, position)
             nearestSensor = obj;
         }
     }
-    
+
     return nearestSensor[envmode];
 }
 
@@ -437,7 +273,7 @@ function initMap() {
     // Create map object with parameters.
 	map = new google.maps.Map(document.getElementById('map'), {
 		zoom: 14,										// Initial zoom
-		center: {lat: 49.0146208, lng: 8.3949888},     // Initial LatLong Position.
+		center: { lat: 49.0146208, lng: 8.3949888 },      // Initial LatLong Position.
 		mapTypeId: google.maps.MapTypeId.ROADMAP,		// Map type.
 		streetViewControl: false,						// Disable all controls
 		disableDefaultUI: true,
@@ -453,18 +289,14 @@ function initMap() {
         $("#loading-screen").css("display", "none");
     });
     
+    // function call updateData, async code
+    updateData(refreshMap);
     
-    // function call getData, async code
-    getData();
-    
-    
-    $("a.travel-mode").click(
-        function(){
-            var id = $(this).attr("id"); 
-            travel_mode = google.maps.TravelMode[id];
-            updateContent(false);
-        }    
-    );
+    $("a.travel-mode").click(function() {
+        var travelModeId = $(this).attr("id");
+        travel_mode = google.maps.TravelMode[travelModeId];
+        updateContent(false);
+    });
     directionsService = new google.maps.DirectionsService;
     var searchField1 = $("#fromInput");
     var searchField2 = $("#toInput");
@@ -507,7 +339,6 @@ function initMap() {
             getCurrentLocation(function(location) {
                 searchField2.val(location);
                 searchField2.trigger("input");
-                
             });
         }
         else 
@@ -543,21 +374,19 @@ function getCurrentLocation(callback)
             var infowindow = new google.maps.InfoWindow({map: map});
             handleLocationError(true, infowindow, map.getCenter());
         });
-        
-    //return "currentLocation";    
-    } 
+        // return "currentLocation";    
+    }
     else
     {
         // Browser doesn't support Geolocation
         var infowindow = new google.maps.InfoWindow({map: map});
         handleLocationError(false, infowindow, map.getCenter());    
     }
-    
 }
 
 function handleLocationError(browserHasGeolocation, infoWindow, pos) {
-  infoWindow.setPosition(pos);
-  infoWindow.setContent(browserHasGeolocation ?
+    infoWindow.setPosition(pos);
+    infoWindow.setContent(browserHasGeolocation ?
                         'Error: The Geolocation service failed.' :
                         'Error: Your browser doesn\'t support geolocation.');
 }
@@ -589,42 +418,34 @@ function LatLong(route, interpol) {
                         return result;
                     }
                     else
-                    {
                         currentDistance += distance;
-                    }
-                        
                 }
                 return step.end_location;
             }
             else 
-            {
                 currentDistance += step.distance.value;
-            }
         }
     }
     return route.end_location;
 }
 
 function getDistanceFromLatLon(point1, point2) {
-  if (!point1 || !point2)
-  {
-      window.alert("getDistanceFromLatLon got undefined points");
-  }
-  var lat1 = point1.lat();
-  var lon1 = point1.lng();
-  var lat2 = point2.lat();
-  var lon2 = point2.lng();
-  var R = 6371; // Radius of the earth in km
-  var dLat = deg2rad(lat2-lat1);  // deg2rad below
-  var dLon = deg2rad(lon2-lon1); 
-  var a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-    ; 
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  var d = R * c; // Distance in km
-  return d * 1000;
+    if (!point1 || !point2)
+        window.alert("getDistanceFromLatLon got undefined points");
+    var lat1 = point1.lat();
+    var lon1 = point1.lng();
+    var lat2 = point2.lat();
+    var lon2 = point2.lng();
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2-lat1);  // deg2rad below
+    var dLon = deg2rad(lon2-lon1); 
+    var a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var d = R * c; // Distance in km
+    return d * 1000;
 }
 
 function deg2rad(deg) {
@@ -633,29 +454,14 @@ function deg2rad(deg) {
 
 // called when drop down button is clicked - opens text fields for routing
 function dropDownTable() {
-    var arrow = $("#dropDownTable"); 
-    var dropDownContainer = $("#dropDownContainer");
-    if (!dropDownContainer.hasClass("tableVisible"))
-    {
-        // show table
-        dropDownContainer.addClass("tableVisible");
-    }
-    else 
-    {
-        // delete table
-        dropDownContainer.removeClass("tableVisible");
-    }
-    
+    //var arrow = $("#dropDownTable"); 
+    $("#dropDownContainer").toggleClass("tableVisible");
 }
 
 function toggleOnchange()
 {
-    var toggle = $("#envmap-toggle");
-    if (toggle.is(":checked")) {
+    if ($("#envmap-toggle").is(":checked"))
         $("#map").removeClass("hideClusterIcons");
-    } 
     else
-    {
         $("#map").addClass("hideClusterIcons");
-    }
 }
