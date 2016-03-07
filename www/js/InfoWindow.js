@@ -1,6 +1,7 @@
 var activeInfoWindow = null;
 
 function showInfoWindow(
+    map      /* Map */, 
     content  /* JQuery */, 
     marker   /* Marker? */,
     position /* LatLng? */)

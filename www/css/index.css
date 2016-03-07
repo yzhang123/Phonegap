@@ -17,6 +17,7 @@
  * under the License.
  */
 * {
+    box-sizing: border-box;
     -webkit-tap-highlight-color: rgba(0,0,0,0); /* make transparent link selection, adjust last value opacity 0 to 1.0 */
 }
 
@@ -195,33 +196,73 @@ h1 {
     padding: 0.7em;
     text-align: center;
     height: 2.1em;
-    box-sizing: border-box;
+}
+
+.header-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 50px !important;
+    background-size: 22px 22px !important;
+    background-repeat: no-repeat !important; 
+    background-position: center !important;
+    margin: 5px !important;
+    background-color: rgba(0,0,0,0.3) !important;
+}
+.header-icon-active {
+    background-color: rgba(0,0,0,0.5) !important;
 }
 
 .ui-icon-walking {
 	background-image: url(../img/walking.png) !important;
-    background-repeat: no-repeat !important; 
-    background-position: center !important;
-    background-size: 18px 18px !important;
 }
 .ui-icon-transit {
 	background-image: url(../img/transit.png) !important;
-    background-repeat: no-repeat !important; 
-    background-position: center !important;
-    background-size: 18px 18px !important;
 }
 .ui-icon-driving {
 	background-image: url(../img/driving.png) !important;
-    background-repeat: no-repeat !important; 
-    background-position: center !important;
-    background-size: 18px 18px !important;
 }
 .ui-icon-bicycling {
 	background-image: url(../img/bicycling.png) !important;
-    background-repeat: no-repeat !important; 
-    background-position: center !important;
-    background-size: 18px 18px !important;
 }
 
+table.route-info-window td:first-child {
+    text-align: right;
+    padding-right: 20px;
+}
 
+div[data-role="page"] {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    top: 0;
+    height: 100%;
+}
 
+div[data-role="header"] {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    top: 0;
+    height: 56px; /* HEADER */
+    
+    padding: 5px;
+    text-align: center;
+}
+
+div[data-role="content"] {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    top: 56px; /* HEADER */
+    bottom: 30px; /* FOOTER */
+    
+    padding: 0;
+}
+
+div[data-role="footer"] {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    bottom: 0px;
+    height: 30px; /* FOOTER */
+}
