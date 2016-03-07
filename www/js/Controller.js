@@ -1,5 +1,6 @@
 
-// called when Google Maps plugin is ready (see map request in index.html)
+// callback function when Google Maps plugin is ready (see map request in index.html)
+// e.g. google.maps... exists now
 function onGoogleMapsReady() {
     var mapContainer = $("#map");
     // Create map object with parameters.
@@ -11,7 +12,9 @@ function onGoogleMapsReady() {
 		disableDefaultUI: true,
 		zoomControl: false
 	});
-    google.maps.event.addListenerOnce(map, 'idle', hideSplash);
+    
+    //idle when map pieces loaded
+    google.maps.event.addListenerOnce(map, 'idle', hideLoadingScreen);
     
     // keep Google Maps internal size up-to-date
     function resizeGoogleMaps() { google.maps.event.trigger(map, 'resize'); }
@@ -25,23 +28,24 @@ function onGoogleMapsReady() {
         imagePath: "img/m"
     });
     
-    // update travel mode
+    // update travel mode on upper navigation button click
     $("a.travel-mode").click(function() {
         var travelModeId = $(this).attr("id");
         changeCurrentTravelMode(travelModeId);
     });
+    //set initial travel mode
     changeCurrentTravelMode(google.maps.TravelMode.WALKING);
     
-    // update current feature
+    // update current feature on left nav feature bar change
     $("input[name='env']").change(function() {
         if ($(this).is(':checked'))
             changeCurrentFeature($(this).val());
     });
+    //set initial feature
     changeCurrentFeature(DATA_FEATURES[0]);
     
     // update data
-    updateData(onDataUpdated);
-    onDataUpdated();
+    updateDataAsync(onDataUpdated);
     
     initLocationSearchField(map, $("#fromInput"), setFrom, clearFrom);
     initLocationSearchField(map, $("#toInput")  , setTo  , clearTo);
@@ -70,6 +74,7 @@ var _to = null;   // { name: string, location: LatLng }
 var current_feature;
 var polylines = [];
 
+//called when env data was changed
 function onDataUpdated()
 {
     updateMarkerClusters();
@@ -125,7 +130,7 @@ function addMarkerAtPlace(
 
 // updates routing on map dependent on current start and end address
 function updateMap(adjustViewPort /* boolean */) {
-    closeInfoWindows();
+    closeInfoWindow();
     
     // clear markers
     for (var marker of markers)
@@ -145,7 +150,7 @@ function updateMap(adjustViewPort /* boolean */) {
 
     // add routes
     if (_from && _to)
-        route(_from, _to, travel_mode, function (routes) { showRoutes(routes, adjustViewPort); });
+        routeAsync(_from, _to, travel_mode, function (routes) { showRoutes(routes, adjustViewPort); });
     else if (adjustViewPort)
     {   // adjust viewport
         if (_from)
@@ -159,7 +164,7 @@ function updateMap(adjustViewPort /* boolean */) {
 function showRoutes(routes /* DirectionsRoute[] */, adjustViewPort /* boolean */)
 {
     var scores = [];
-    var bestRouteIndex = chooseBestRoute(routes, scores);
+    var bestRouteIndex = chooseBestRoute(routes, current_feature, scores);
     //onPolylineClick(bestRouteIndex, scores);
     var bounds = new google.maps.LatLngBounds();
     for (var i = 0, len = routes.length; i < len; i++) {
@@ -188,7 +193,7 @@ function showRoutes(routes /* DirectionsRoute[] */, adjustViewPort /* boolean */
 }
 
 // calculates routing if start and end address are valid, otherwise clears all routes/polylines
-function route(_from, _to, travel_mode, callback) {
+function routeAsync(_from, _to, travel_mode, callback) {
     (new google.maps.DirectionsService).route(
         {
             origin: _from.location,
@@ -204,23 +209,5 @@ function route(_from, _to, travel_mode, callback) {
         });
 }
 
-    
-// // takes a directionsResult object as argument
-function chooseBestRoute(routes, scores) {
-    // number of alternative routes
-    var bestRouteIndex;
-    var bestEnvScore;
-    for (var route = 0; route < routes.length; route++)
-    {
-        var currentRoute = routes[route].legs[0];
-        var score = routeAverageFeature(currentRoute, current_feature);
-        scores.push(score);
-        if (route == 0 || score < bestEnvScore)
-        {
-            bestRouteIndex = route;
-            bestEnvScore = score;
-        }
-    }
-    return bestRouteIndex;
-}
+
 

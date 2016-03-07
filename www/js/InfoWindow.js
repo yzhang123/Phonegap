@@ -6,7 +6,7 @@ function showInfoWindow(
     marker   /* Marker? */,
     position /* LatLng? */)
 {
-    closeInfoWindows();
+    closeInfoWindow();
     
     var infoWindow = new google.maps.InfoWindow();
     infoWindow.setContent(content[0]);
@@ -16,7 +16,7 @@ function showInfoWindow(
     infoWindow.open(map, marker);     
 }
 
-function closeInfoWindows(infoWindow)
+function closeInfoWindow(infoWindow)
 {
     if (activeInfoWindow) activeInfoWindow.close();
 }

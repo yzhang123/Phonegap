@@ -1,34 +1,33 @@
+/*
+ Datasource contains all information and logic on environment data.
+ E.g. cache, asynchronous loading, parsing
+ */
 
+
+var objectsarray = [];
+ // try loading data from cache
+var json = window.localStorage.getItem(DATA_LOCALSTORAGE_KEY);
+if (json)
+    objectsarray = JSON.parse(json);
+else
+    console.warn("couldn't find cached data");
+    
+        
+// extract complete feature name from abbreviation.
 function featureLabel(feature)
 {
     return $("label[for=" + feature + "]").text(); 
 }
 
-var _dataCache = window.localStorage;
-function _dataLoad()
-{
-    var json = _dataCache.getItem(DATA_LOCALSTORAGE_KEY);
-    if (json)
-        objectsarray = JSON.parse(json);
-    else
-        console.warn("couldn't find cached data");
-}
-function _dataSave()
-{
-    _dataCache.setItem(DATA_LOCALSTORAGE_KEY, JSON.stringify(objectsarray));
-}
-
-var objectsarray = [];
-_dataLoad();
-
-function latLngJ2G(latLng)
+// converts JSON latLng to GoogleMaps LatLng
+function latLngJ2G(latLng /* {lat: number, lng: number} */)
 {
     return new google.maps.LatLng(latLng.lat, latLng.lng);
 }
 
-// if using this function specify callback function 
-// that takes the array of parsed objects as parameter
-function updateData(successCallback)
+// asynchronously overwrites with loaded data
+// calls specified callback on success
+function updateDataAsync(successCallback)
 {
     $.ajax({
         dataType: "json",
@@ -36,7 +35,9 @@ function updateData(successCallback)
         success: function(jsonData) 
         {
             objectsarray = filterData(parseJSONData(jsonData));
-            _dataSave();
+            // save to cache
+            window.localStorage.setItem(DATA_LOCALSTORAGE_KEY, JSON.stringify(objectsarray));
+            // to update view with new data
             successCallback();
         }
     });
@@ -79,7 +80,7 @@ function parseJSONData(data)
         for (var i in columns)
             rawObj[columns[i]] = row[i];
        
-        // parse object
+        // parse object to float values
         var parsedObj = { };
         parsedObj.location = { lat: parseFloat(rawObj.lat), lng: parseFloat(rawObj.lon) };
         for (var i of DATA_FEATURES)
@@ -91,23 +92,28 @@ function parseJSONData(data)
 }
 
 
-// returns nearest values for a position
-function getFeaturesAt(position)
+// returns nearest data entry for a position
+function getFeaturesAt(position /* Google LatLng */)
 {
     if (objectsarray.length == 0)
-        window.alert("no data points in data base");
+    { // corner case: no cached data yet and no data received so far
+        var object = { location: { lat: NaN, lng: NaN } };
+        for (var feature of DATA_FEATURES)
+            object[feature] = NaN;
+        return object;
+    }
 
-    var nearestSensor = objectsarray[0];
-    var minDist = getDistanceFromLatLon(latLngJ2G(nearestSensor.location), position);
+    var nearestFeatures = objectsarray[0];
+    var minDist = getDistanceFromLatLon(latLngJ2G(nearestFeatures.location), position);
     for (var obj of objectsarray)
     {
         var dist = getDistanceFromLatLon(latLngJ2G(obj.location), position);
         if (dist < minDist)
         {
             minDist = dist;
-            nearestSensor = obj;
+            nearestFeatures = obj;
         }
     }
 
-    return nearestSensor;
+    return nearestFeatures;
 }

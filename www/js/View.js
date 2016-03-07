@@ -1,16 +1,16 @@
-// gives meaning to quick action buttons inside location search fields
+// extends standard search field by wanted behaviour.
 function initLocationSearchField(
     map          /* Map */,
     inputElement /* JQuery */, 
-    setValue     /* (string, LatLng) => void */,
-    clearValue   /* ()               => void */)
+    setPlace     /* (string, LatLng) => void */,
+    clearPlace   /* ()               => void */)
 {
     // autocompletion
     var autocomplete = new google.maps.places.Autocomplete(inputElement[0]);
     autocomplete.bindTo('bounds', map);
     autocomplete.addListener('place_changed', function() {
         var place = autocomplete.getPlace(); /* PlaceResult */
-        setValue(place.name, place.geometry.location);
+        setPlace(place.name, place.geometry.location);
     });
     
     // attach quick actions (gives meaning to the button inside the search field)
@@ -23,16 +23,16 @@ function initLocationSearchField(
             getCurrentLocation(function(result /* GeocoderResult */) {
                 inputElement.val(result.formatted_address);
                 inputElement.trigger("input");
-                setValue(result.formatted_address, result.geometry.location);
+                setPlace(result.formatted_address, result.geometry.location);
             });
         }
         else
-            clearValue();
+            clearPlace();
     });
 }
 
 // show/hide UI elements
-function hideSplash()
+function hideLoadingScreen()
 {
     $("#loading-screen").hide();
 }
@@ -42,7 +42,6 @@ function hideSearchFields()
 }
 function toggleSearchFields() 
 {
-    //var arrow = $("#dropDownTable"); 
     $("#dropDownContainer").toggleClass("tableVisible");
 }
 function toggleClusterIcons()
