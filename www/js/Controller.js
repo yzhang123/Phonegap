@@ -93,7 +93,7 @@ function changeCurrentTravelMode(travelMode)
 function changeCurrentFeature(feature)
 {
     current_feature = feature;
-    $("#footer").text(featureLabel(current_feature));
+    $("#footer").html("Markers represent: <b>" + featureLabel(current_feature) + "</b>");
     
     updateMarkerClusters();
     updateMap(false);
@@ -131,6 +131,7 @@ function addMarkerAtPlace(
 // updates routing on map dependent on current start and end address
 function updateMap(adjustViewPort /* boolean */) {
     closeInfoWindow();
+    hideTravelModeButtons();
     
     // clear markers
     for (var marker of markers)
@@ -150,7 +151,10 @@ function updateMap(adjustViewPort /* boolean */) {
 
     // add routes
     if (_from && _to)
+    {
+        showTravelModeButtons();
         routeAsync(_from, _to, travel_mode, function (routes) { showRoutes(routes, adjustViewPort); });
+    }
     else if (adjustViewPort)
     {   // adjust viewport
         if (_from)
@@ -160,7 +164,6 @@ function updateMap(adjustViewPort /* boolean */) {
     }
 }
 
-// shows 
 function showRoutes(routes /* DirectionsRoute[] */, adjustViewPort /* boolean */)
 {
     var scores = [];

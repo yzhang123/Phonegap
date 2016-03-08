@@ -196,6 +196,12 @@ h1 {
     padding: 0.7em;
     text-align: center;
     height: 2.1em;
+    font-weight: normal;
+}
+
+tr.bold-row
+{
+    font-weight: bold;
 }
 
 .header-icon {
@@ -265,4 +271,9 @@ div[data-role="footer"] {
     width: 100%;
     bottom: 0px;
     height: 30px; /* FOOTER */
+}
+
+div.ui-radio > label
+{
+    background-color: #f6f6f6 !important;
 }

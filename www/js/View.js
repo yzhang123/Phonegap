@@ -36,6 +36,14 @@ function hideLoadingScreen()
 {
     $("#loading-screen").hide();
 }
+function hideTravelModeButtons()
+{
+    $(".travel-mode").hide();
+}
+function showTravelModeButtons()
+{
+    $(".travel-mode").show();
+}
 function hideSearchFields()
 {
     $("#dropDownContainer").removeClass("tableVisible");
@@ -70,7 +78,7 @@ function createPlaceDescription(place /* { name: string, location: LatLng } */) 
 function createRouteDescription(route, score)
 {
     var content = $("<table>").addClass("route-info-window")
-        .append(createTableRow(featureLabel(current_feature), score.toFixed(1)))
+        .append(createTableRow(featureLabel(current_feature), score.toFixed(1)).addClass("bold-row"))
         .append(createTableRow("Travel mode", travel_mode));
     if (route.distance)
         content.append(createTableRow("Distance", (route.distance.value / 1000).toFixed(2) + " km"));

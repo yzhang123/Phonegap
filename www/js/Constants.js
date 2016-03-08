@@ -1,5 +1,5 @@
 // route polyline style
-var ROUTE_COLOR_BEST = "#FF0000";
+var ROUTE_COLOR_BEST = "#00CC00";
 var ROUTE_COLOR = "#0088FF";
 var ROUTE_WIDTH = 8;
 var ROUTE_OPACITY = 0.6;
