@@ -6,7 +6,7 @@
 
 var objectsarray = [];
  // try loading data from cache
-var json = window.localStorage.getItem(DATA_LOCALSTORAGE_KEY);
+var json = window.localStorage.getItem(LOCALSTORAGE_KEY_DATA);
 if (json)
     objectsarray = JSON.parse(json);
 else
@@ -36,7 +36,7 @@ function updateDataAsync(successCallback)
         {
             objectsarray = filterData(parseJSONData(jsonData));
             // save to cache
-            window.localStorage.setItem(DATA_LOCALSTORAGE_KEY, JSON.stringify(objectsarray));
+            window.localStorage.setItem(LOCALSTORAGE_KEY_DATA, JSON.stringify(objectsarray));
             // to update view with new data
             successCallback();
         }

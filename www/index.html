@@ -41,6 +41,12 @@
         <script type="text/javascript" src="js/View.js"></script>
         <script type="text/javascript" src="js/Controller.js"></script>
         <script type="text/javascript" src="js/index.js"></script>
+        <!--- Tour-->
+        <link rel="stylesheet" href="css/grumble.min.css">
+        <link rel="stylesheet" href="css/crumble.css">
+        <script type="text/javascript" src="js/crumble/jquery.grumble.min.js"></script>
+        <script type="text/javascript" src="js/crumble/jquery.crumble.min.js"></script>
+        <script type="text/javascript" src="js/Tutorial.js"></script>
         <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
         <link rel="stylesheet" type="text/css" href="css/index.css" />
@@ -51,6 +57,14 @@
         <title>StaySafe</title>
     </head>
     <body>
+        <ol id="tutorial" style="display:none;">
+            <li data-target="#travelmodes">Welcome to the StaySafe Guide! Click to continue.</li>        
+            <li data-target="#footerPanel" data-angle="20">The markers on the map show the currently selected environment feature. </li>
+            <li data-target="#searchButton">
+                Start routing. The most environmental friendly route is colored in green.
+            </li>
+            <li data-target="#menuButton">Change the current environment feature. </li>
+        </ol>
         
         <div id="loading-screen">
             <div>
@@ -104,10 +118,10 @@
             
               
             <div data-role="header">
-                <div style="float:left" class="ui-nodisc-icon" >
+                <div id="menuButton" style="float:left" class="ui-nodisc-icon" >
                     <a href="#left-panel" class="ui-btn ui-icon-bullets ui-btn-icon-notext header-icon" id="openRightPanel"></a>
                 </div>
-                <span>
+                <span id="travelmodes">
                     <div class="ui-nodisc-icon" style="display: inline-block">
                         <a href="#" data-role="button" data-icon="walking" data-iconpos="notext" class="travel-mode header-icon" id="WALKING" data-shadow="false"></a>
                     </div>
@@ -121,7 +135,7 @@
                         <a href="#" data-role="button" data-icon="bicycling" data-iconpos="notext" class="travel-mode header-icon" id="BICYCLING" data-shadow="false"></a>
                     </div>
                 </span>
-                <div style="float:right" class="ui-nodisc-icon" >
+                <div id="searchButton" style="float:right" class="ui-nodisc-icon" >
                     <a href="#" class="ui-btn ui-icon-search ui-btn-icon-notext header-icon" onclick="toggleSearchFields()"></a>
                 </div>
             </div>
@@ -135,7 +149,7 @@
                 <div id="map" style="width:100%;height:100%; text-shadow: none"></div>
             </div>
              
-            <div data-role="footer"><div id="footer"></div></div>
+            <div id="footerPanel" data-role="footer"><div id="footer"></div></div>
         </div>
         
     </body>

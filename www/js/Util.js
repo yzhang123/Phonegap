@@ -24,8 +24,7 @@ function getCurrentLocation(callback /* GeocoderResult => void */)
                     if (status === google.maps.GeocoderStatus.OK && results[0])
                         callback(results[0]);
                 });
-            }, 
-            function() { window.alert("The Geolocation service failed."); });
+            });
     else
         window.alert("Your browser doesn't support geolocation");
 }

@@ -126,7 +126,7 @@ h1 {
 
 #dropDownContainer {
     transition: all 0.1s;
-    top: -90px;
+    top: -110px;
     z-index: 1;
     position: absolute;
     width: 100%;
@@ -135,8 +135,9 @@ h1 {
 {
     margin-left: 5px;
     margin-right: 5px;
+    line-height: 30px;
 }
-	
+
 #dropDownContainer.tableVisible
 {
 	top: 0;
@@ -147,7 +148,14 @@ h1 {
     display: block !important;
     
 }
-
+#dropDownContainer .ui-input-has-clear 
+{
+    padding-right: 3.3em;
+}
+#dropDownContainer a.ui-btn
+{
+    transform: scale(1.3);
+}
 #dropDownContainer .ui-input-clear-hidden::after
 {
     background-image: url('../img/location.svg') !important;
@@ -169,7 +177,7 @@ h1 {
     height: 100%;
     width: 100%;
     background-color: #efefef;
-    z-index: 1001;
+    z-index: 100000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -277,4 +285,11 @@ div[data-role="footer"] {
 div.ui-radio > label
 {
     background-color: #f6f6f6 !important;
+}
+
+.grumble-text
+{
+    font-family: Roboto;
+    text-transform: none;
+    text-shadow: none;
 }

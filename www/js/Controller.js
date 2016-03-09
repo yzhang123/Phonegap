@@ -47,8 +47,12 @@ function onGoogleMapsReady() {
     // update data
     updateDataAsync(onDataUpdated);
     
+    // init search fields
     initLocationSearchField(map, $("#fromInput"), setFrom, clearFrom);
     initLocationSearchField(map, $("#toInput")  , setTo  , clearTo);
+    
+    // start tutorial if not done before
+    startTutorial();
 }
 // end of async onGoogleMapsReady
 

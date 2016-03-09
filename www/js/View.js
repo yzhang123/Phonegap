@@ -5,6 +5,8 @@ function initLocationSearchField(
     setPlace     /* (string, LatLng) => void */,
     clearPlace   /* ()               => void */)
 {
+    var nestedButton = inputElement.next(".ui-input-clear");
+    
     // autocompletion
     var autocomplete = new google.maps.places.Autocomplete(inputElement[0]);
     autocomplete.bindTo('bounds', map);
@@ -13,18 +15,51 @@ function initLocationSearchField(
         setPlace(place.name, place.geometry.location);
     });
     
+    var placeHolder = inputElement.attr("placeholder");
+    
+    // GPS retrieval
+    var gpsTimoutHandle = null;
+    function triggerGPSlookup()
+    {
+        cancelGPSlookup(); // for cleanup
+        nestedButton.css("opacity", 0);
+        inputElement.attr("placeholder", GEOLOCATION_MSG);
+        gpsTimoutHandle = setTimeout(gpsTimeout, GEOLOCATION_TIMEOUT_MS);
+        getCurrentLocation(function(result /* GeocoderResult */) {
+            if (gpsTimoutHandle !== null)
+            {
+                cancelGPSlookup(); // for cleanup
+                inputElement.val(result.formatted_address);
+                inputElement.trigger("input");
+                setPlace(result.formatted_address, result.geometry.location);
+            }
+        });
+    }
+    function cancelGPSlookup()
+    {
+        inputElement.attr("placeholder", placeHolder);
+        if (gpsTimoutHandle !== null)
+        {
+            nestedButton.css("opacity", 1);
+            clearTimeout(gpsTimoutHandle);
+            gpsTimoutHandle = null;
+        }
+    }
+    function gpsTimeout()
+    {
+        cancelGPSlookup();
+        inputElement.attr("placeholder", GEOLOCATION_ERROR_MSG);
+    }
+    inputElement.click(cancelGPSlookup); // if the user changes her/his mind...
+    
     // attach quick actions (gives meaning to the button inside the search field)
-    inputElement.next(".ui-input-clear").preBind("click", function(event) {
-        if ($(this).hasClass("ui-input-clear-hidden")) // => geolocate
+    nestedButton.preBind("click", function(event) {
+        if (nestedButton.hasClass("ui-input-clear-hidden")) // => geolocate
         {
             // stop further event handlers on the same button (in this case clearing the field) 
             // since we use the same button for 2 purposes: clear and locate
             event.stopImmediatePropagation();
-            getCurrentLocation(function(result /* GeocoderResult */) {
-                inputElement.val(result.formatted_address);
-                inputElement.trigger("input");
-                setPlace(result.formatted_address, result.geometry.location);
-            });
+            triggerGPSlookup();
         }
         else
             clearPlace();
