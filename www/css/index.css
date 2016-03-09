@@ -115,6 +115,7 @@ h1 {
     -webkit-animation:fade 3000ms infinite;
 }
 
+/*my code*/
 #fromInput, #toInput {
   font-size: 15px;
   font-weight: 300;
