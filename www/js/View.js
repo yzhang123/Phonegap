@@ -28,7 +28,7 @@ function initLocationSearchField(
         getCurrentLocation(function(result /* GeocoderResult */) {
             if (gpsTimoutHandle !== null)
             {
-                cancelGPSlookup(); // for cleanup
+                cancelGPSlookup(); // for cleanup of timeout
                 inputElement.val(result.formatted_address);
                 inputElement.trigger("input");
                 setPlace(result.formatted_address, result.geometry.location);
@@ -37,6 +37,7 @@ function initLocationSearchField(
     }
     function cancelGPSlookup()
     {
+        //reset of From /To
         inputElement.attr("placeholder", placeHolder);
         if (gpsTimoutHandle !== null)
         {
